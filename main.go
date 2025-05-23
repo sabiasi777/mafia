@@ -30,44 +30,6 @@ type Page struct {
 var rooms = make(map[string]*Room)
 var tmpl *template.Template
 
-// func changePlayers() { // room *Room
-// 	f, err := os.Open("./templates/game.html")
-// 	if err != nil {
-// 		fmt.Printf("error opening file: %v\n", err)
-// 		return
-// 	}
-// 	defer f.Close()
-
-// 	doc, err := goquery.NewDocumentFromReader(f)
-// 	if err != nil {
-// 		fmt.Printf("Error creating document: %v\n", err)
-// 		return
-// 	}
-
-// 	li := fmt.Sprintf("<li id=\"playerName\" >{{.Players[len(Players)-1].Name}}</li>")
-// 	doc.Find("#playerList").AppendHtml(li)
-
-// 	modifiedHtml, err := doc.Html()
-// 	if err != nil {
-// 		fmt.Printf("Error generating HTML: %v\n", err)
-// 		return
-// 	}
-// 	fmt.Println(modifiedHtml)
-
-// 	fWrite, err := os.Create("./templates/game.html")
-// 	if err != nil {
-// 		fmt.Printf("Error opening file for writing: %v\n", err)
-// 		return
-// 	}
-// 	defer fWrite.Close()
-
-// 	_, err = fWrite.WriteString(modifiedHtml)
-// 	if err != nil {
-// 		fmt.Printf("Error writing modified HTML to file %v:\n", err)
-// 		return
-// 	}
-// }
-
 func joinHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Joinhandler")
 	if r.Method != http.MethodPost {
@@ -97,7 +59,6 @@ func joinHandler(w http.ResponseWriter, r *http.Request) {
 
 	room.Players = append(room.Players, Player{Name: username})
 	fmt.Println(room.Players)
-	//changePlayers() // room
 
 	http.Redirect(w, r, "/room/"+roomcode+"?user="+username, http.StatusSeeOther)
 }
@@ -127,7 +88,6 @@ func createRoom(w http.ResponseWriter, r *http.Request) {
 	room.Players = append(room.Players, Player{Name: username})
 	rooms[roomCode] = &room
 	fmt.Println("Room Created:", rooms[roomCode])
-	//changePlayers() // &room
 
 	http.Redirect(w, r, "/room/"+roomCode+"?user="+username, http.StatusSeeOther)
 }
@@ -172,7 +132,6 @@ func main() {
 	go func() {
 		sig := <-sigChan
 		fmt.Printf("\nReceived signal: %v\n", sig)
-		//removeTheLiElements()
 		os.Exit(0)
 	}()
 
@@ -180,45 +139,6 @@ func main() {
 		fmt.Printf("error listening:%v\n", err)
 		return
 	}
-
-	//removeTheLiElements()
-}
-
-func removeTheLiElements() {
-	f, err := os.Open("./templates/game.html")
-	if err != nil {
-		fmt.Printf("error opening file: %v\n", err)
-		return
-	}
-	defer f.Close()
-
-	doc, err := goquery.NewDocumentFromReader(f)
-	if err != nil {
-		fmt.Printf("Error creating document: %v\n", err)
-		return
-	}
-
-	doc.Find("#playerName").Remove()
-	updatedHtml, err := doc.Html()
-	if err != nil {
-		fmt.Printf("Error updating html: %v\n", err)
-		return
-	}
-
-	fWrite, err := os.Create("./templates/game.html")
-	if err != nil {
-		fmt.Printf("Error opening file for writing: %v\n", err)
-		return
-	}
-	defer fWrite.Close()
-
-	_, err = fWrite.WriteString(updatedHtml)
-	if err != nil {
-		fmt.Printf("Error writing modified HTML to file %v:\n", err)
-		return
-	}
-
-	fmt.Println("Elements have been removed successfuly")
 }
 
 func generateRoomCode(length int) string {
