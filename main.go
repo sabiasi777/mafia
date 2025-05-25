@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"html/template"
 	"math/rand"
 	"net/http"
@@ -109,7 +108,7 @@ func roomHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	tmpl = template.Must(template.ParseGlob("./templates/game.html"))
+	tmpl = template.Must(template.ParseGlob("./templates/*.html"))
 	tmpl.ExecuteTemplate(w, "game.html", room)
 }
 
