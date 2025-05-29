@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"math/rand"
@@ -8,17 +9,23 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type Player struct {
-	Name string
+	Name     string `json:"name"`
+	Role     string `json:"role"`
+	IsActive bool   `json:"isactive"`
 }
 
 type Room struct {
-	Code    string
-	Players []Player
+	Code        string
+	Players     []Player
+	ActiveRoles []string
 }
 
 type Page struct {
@@ -28,6 +35,59 @@ type Page struct {
 
 var rooms = make(map[string]*Room)
 var tmpl *template.Template
+var upgrader = websocket.Upgrader{}
+var roomsConnections = make(map[string]map[*websocket.Conn]bool)
+var mu sync.Mutex
+
+func handleChat(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("URL:", r.URL)
+	roomCode := r.URL.Query().Get("room")
+	fmt.Println("ROOMCODE:", roomCode)
+	if roomCode == "" {
+		http.Error(w, "Missing room code", http.StatusBadRequest)
+		return
+	}
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Websocket upgrade error:", err)
+		return
+	}
+
+	mu.Lock()
+	if roomsConnections[roomCode] == nil {
+		roomsConnections[roomCode] = make(map[*websocket.Conn]bool)
+	}
+	roomsConnections[roomCode][conn] = true
+	mu.Unlock()
+
+	defer func() {
+		mu.Lock()
+		delete(roomsConnections[roomCode], conn)
+		mu.Unlock()
+		conn.Close()
+	}()
+
+	handleConnection(conn, roomCode)
+}
+
+func handleConnection(conn *websocket.Conn, roomCode string) {
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("Read error:", err)
+			break
+		}
+
+		mu.Lock()
+		for client := range roomsConnections[roomCode] {
+			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+				fmt.Println("Error writing message:", err)
+			}
+		}
+		mu.Unlock()
+	}
+}
 
 func joinHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Joinhandler")
@@ -56,8 +116,7 @@ func joinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room.Players = append(room.Players, Player{Name: username})
-	fmt.Println(room.Players)
+	room.Players = append(room.Players, Player{Name: username, IsActive: true})
 
 	http.Redirect(w, r, "/room/"+roomcode+"?user="+username, http.StatusSeeOther)
 }
@@ -84,7 +143,7 @@ func createRoom(w http.ResponseWriter, r *http.Request) {
 		Players: []Player{},
 	}
 
-	room.Players = append(room.Players, Player{Name: username})
+	room.Players = append(room.Players, Player{Name: username, IsActive: true})
 	rooms[roomCode] = &room
 	fmt.Println("Room Created:", rooms[roomCode])
 
@@ -93,7 +152,10 @@ func createRoom(w http.ResponseWriter, r *http.Request) {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("IndexHandler")
-	tmpl.ExecuteTemplate(w, "index.html", nil)
+	if err := tmpl.ExecuteTemplate(w, "index.html", nil); err != nil {
+		http.Error(w, "Template error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func roomHandler(w http.ResponseWriter, r *http.Request) {
@@ -103,27 +165,64 @@ func roomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	roomCode := r.URL.Path[len("/room/"):]
+	fmt.Println("ROOMCODE IN ROOM HANDLER:", roomCode)
 	room, exists := rooms[roomCode]
 	if !exists {
 		http.NotFound(w, r)
 		return
 	}
-	tmpl = template.Must(template.ParseGlob("./templates/*.html"))
-	tmpl.ExecuteTemplate(w, "game.html", room)
+
+	room.ActiveRoles = GetActiveRoles(len(room.Players))
+
+	if err := tmpl.ExecuteTemplate(w, "game.html", room); err != nil {
+		http.Error(w, "Template error", http.StatusInternalServerError)
+		return
+	}
+}
+
+type StartRequest struct {
+	RoomCode string `json:"roomCode"`
+}
+
+func startGame(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req StartRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	roomCode := req.RoomCode
+	room, exists := rooms[roomCode]
+	if !exists {
+		http.NotFound(w, r)
+		return
+	}
+
+	assignRoles(room)
+	fmt.Println("LETS SAY THE ROLE:")
+	fmt.Println(room.Players[len(room.Players)-1].Role, room.Players[len(room.Players)-1].Name)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(room.Players)
 }
 
 func main() {
 	tmpl = template.Must(template.ParseGlob("templates/*.html"))
 	fs := http.FileServer(http.Dir("assets"))
 
-	rooms["tSgK4H"] = &Room{Code: "tSgK4H", Players: []Player{}}
-
-	http.Handle("/assets/", http.StripPrefix("/assets", fs))
+	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
 
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/room/", roomHandler)
 	http.HandleFunc("/join", joinHandler)
 	http.HandleFunc("/create", createRoom)
+	http.HandleFunc("/start", startGame)
+	http.HandleFunc("/ws/chat", handleChat)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -152,4 +251,54 @@ func generateRoomCode(length int) string {
 	}
 
 	return roomCode.String()
+}
+
+func assignRoles(room *Room) {
+	numPlayers := len(room.Players)
+	roles := []string{}
+
+	switch {
+	case numPlayers == 4:
+		roles = []string{"Mafia", "Doctor", "Villager", "Villager"}
+	case numPlayers <= 6:
+		roles = []string{"Mafia", "Doctor", "Detective", "Villager", "Villager", "Villager"}
+	case numPlayers <= 8:
+		roles = []string{"Mafia", "Mafia", "Doctor", "Detective", "Villager", "Villager", "Villager", "Villager"}
+	case numPlayers <= 10:
+		roles = []string{"Mafia", "Mafia", "Doctor", "Detective", "Bodyguard", "Villager", "Villager", "Villager", "Villager", "Villager"}
+	default:
+		roles = []string{"Mafia", "Mafia", "Godfather", "Doctor", "Detective", "Bodyguard"}
+		for len(roles) < numPlayers {
+			roles = append(roles, "Villager")
+		}
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(roles), func(i, j int) {
+		roles[i], roles[j] = roles[j], roles[i]
+	})
+
+	for i := range room.Players {
+		room.Players[i].Role = roles[i]
+	}
+}
+
+func GetActiveRoles(playerCount int) []string {
+
+	if playerCount < 4 {
+		return []string{}
+	}
+
+	switch {
+	case playerCount == 4:
+		return []string{"Mafia", "Detective", "Doctor", "Villager"}
+	case playerCount <= 6:
+		return []string{"Mafia", "Detective", "Doctor", "2 Villagers"}
+	case playerCount <= 8:
+		return []string{"2 Mafia", "Detective", "Doctor", "2 Villagers"}
+	case playerCount <= 10:
+		return []string{"Mafia", "Mafia", "Doctor", "Detective", "Bodyguard", "Villager", "Villager", "Villager", "Villager", "Villager"}
+	default:
+		return []string{"Mafia", "Villager"}
+	}
 }

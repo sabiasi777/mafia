@@ -2,48 +2,155 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Mafia Game</title>
-    <link rel="stylesheet" href="../assets/css/style.css"/>
+    <link rel="stylesheet" href="/assets/css/game.css"/>
 </head>
-<body>
+  <body>
+    <a href="http://localhost:8080">Mafia</a>
     <div class="container">
         <div id="gameScreen" class="centered">
         <header>
             <h1>Welcome to Room: {{.Code}}</h1>
         </header>
 
-        <section class="game-info">
+        <section class="game-info" id="gameInfo">
             <div class="players">
-            <h2>Players</h2>
-            <ul id="playerList">
-	      {{range .Players}}
-	      <li id="playerName">{{.Name}}</li>
-	      {{end}}
-	    </ul>
+                <h2>Players {{len .Players}}</h2>
+                <ul id="playerList">
+                {{range .Players}}
+                    <li class="{{if .IsActive}}active{{end}}">{{.Name}}</li>
+                {{end}}
+                </ul>
             </div>
 
-            <div class="chat">
-            <h2>Chat</h2>
-            <div class="chat-box" id="chatBox"></div>
-            <form id="chatForm">
-                <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off"/>
-                <button type="submit">Send</button>
-            </form>
-            </div>
-        </section>
+            {{ if .ActiveRoles }}
+                <div class="roles-info">
+                    <h2>Active Roles</h2>
+                    <ul id="roleList">
+                        {{range .ActiveRoles}}
+                            <li>{{.}}</li>
+                        {{end}}
+                    </ul>
+                </div>
+            {{ else }}
+                <p class="warning">Not enough players to start the game. Minimum: 4</p>
+            {{ end }}
 
-        <section class="actions">
-            <h2>Actions</h2>
-            <button id="voteBtn">Vote</button>
-            <button id="killBtn">Kill</button>
-            <button id="skipBtn">Skip</button>
+            <button class="startBtn" id="startButton" type="button" disabled>Start</button>
+
+            
         </section>
+        <div id="statusBar" style="margin-top: 1rem; font-size: 1.2rem;">
+            Waiting for players...
+        </div>
+        <div id="roleContainer" style="display:none; font-size: 24px; text-align: center; margin-top: 20px;"></div>
+        <div id="gameArea" style="display: none;">
+            <div class="chat-box">
+                <input type="text" id="messageInput" placeholder="Enter your message">
+                <button id="sendButton">Send</button>
+            </div>
+            <div id="messages"></div>
         </div>
     </div>
-        
-        <script src="../main.go"></script>
+</div>
+
+<script>
+    const startButton = document.getElementById("startButton")
+    const playerList = document.getElementById("playerList")
+    const roleContainer = document.getElementById('roleContainer');
+    const gameArea = document.getElementById('gameArea');
+    const gameScreen = document.getElementById('gameScreen');
+    const sendButton = document.getElementById("sendButton")
     
+    var roomCode
+    var ws
 
+    function checkPlayerCount() {
+        const playerCount = playerList.querySelectorAll("li").length
+        startButton.disabled = playerCount < 4
+    }
 
+    checkPlayerCount()
+
+    const observer = new MutationObserver(checkPlayerCount)
+    observer.observe(playerList, { childList: true })
+
+    startButton.addEventListener('click', () => {
+        roomCode = window.location.pathname.split("/").pop()
+        fetch("http://localhost:8080/start", {
+            method: "POST",
+            headers: {
+                'Content-Type': "application/json"
+            },
+            body: JSON.stringify({ roomCode })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to start game")
+            return res.json()
+        })
+        .then(data => {
+            connect()
+
+            const currentUser = getCurrentUserNameFromURL()
+            const me = data.find(p => p.name === currentUser)
+            console.log(me)
+            if (me) {
+                startGameUI(me)
+            }
+        })
+        .catch(err => console.error(err))
+    })
+
+    function getCurrentUserNameFromURL() {
+        const params = new URLSearchParams(window.location.search)
+        return params.get("user")
+    }
+
+    function startGameUI(me) {
+        document.getElementById("roleContainer").style.display = "none"
+        document.getElementById("gameInfo").style.display = "none"
+        document.getElementById("statusBar").style.display = "none"
+        document.getElementsByTagName("header")[0].style.display = "none"
+
+        const roleContainer = document.getElementById("roleContainer")
+        roleContainer.textContent = `Your role is: ${me.role}`
+        roleContainer.style.display = "block"
+
+        setTimeout(() => {
+            roleContainer.style.display = "none"
+            document.getElementById("gameArea").style.display = "block"
+        }, 5000)
+    }
+
+    sendButton.addEventListener("click", () => {
+        const input = document.getElementById("messageInput")
+        if (input.value.trim()) {
+            ws.send(input.value)
+            input.value = ""
+        }
+    })
+
+    function connect() {
+        ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
+
+        ws.onopen = function() {
+            console.log("Connected to WebSocket server")
+        }
+
+        ws.onmessage = function(event) {
+            let messageDisplay = document.getElementById("messages")
+            messageDisplay.innerHTML += `<p>${event.data}</p>`
+        }
+
+        ws.onclose = function() {
+            console.log("WebSocket connection closed, retrying...")
+            setTimeout(connect, 1000)
+        }
+
+        ws.onerror = function(error) {
+            console.error("WebSocket error:", error)
+        }
+    }
+</script>
 
 
 </body></html>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mafia Game</title>
-  <link rel="stylesheet" type="text/css" href="../assets/css/style.css" />
+  <link rel="stylesheet" type="text/css" href="../assets/css/index.css" />
 </head>
 <body>
   <div class="container">
@@ -27,6 +27,49 @@
           <button type="submit">Create Room</button>
         </form>
       </div>
+        <section class="info">
+          <button id="rulesBtn">Rules</button>
+
+          <div id="rulesModal" class="modal hidden">
+            <div class="modal-content">
+              <span id="closeRules" class="close">&times;</span>
+              <h2>Game Rules</h2>
+              <p>Mafia is a game of deception and deduction. Each player is assigned a role...</p>
+
+              <h3>Roles</h3>
+              <ul>
+                <li><strong>Mafia:</strong> Eliminate other players without being discovered.</li>
+                <li><strong>Detective:</strong> Investigate players to find out if they are mafia.</li>
+                <li><strong>Doctor:</strong> Protect one player per night from being killed.</li>
+                <li><strong>Villager:</strong> Try to identify the mafia and vote them out.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
     </div>
+   </div>
+
+   <script>
+    const rulesBtn = document.getElementById('rulesBtn');
+    const rulesModal = document.getElementById('rulesModal');
+    const closeRules = document.getElementById('closeRules');
+
+    rulesBtn.addEventListener('click', () => {
+      rulesModal.classList.remove('hidden');
+      rulesModal.style.display = 'block';
+    });
+
+    closeRules.addEventListener('click', () => {
+      rulesModal.classList.add('hidden');
+      rulesModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+      if (event.target == rulesModal) {
+        rulesModal.classList.add('hidden');
+        rulesModal.style.display = 'none';
+      }
+    });
+   </script>
 </body>
 </html>
