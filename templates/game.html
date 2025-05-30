@@ -122,37 +122,74 @@
     }
 
     sendButton.addEventListener("click", () => {
-        const input = document.getElementById("messageInput")
-        if (input.value.trim()) {
-            ws.send(input.value)
-            input.value = ""
+    const input = document.getElementById("messageInput")
+    if (input.value.trim()) {
+        const currentUser = getCurrentUserNameFromURL()
+        const messageData = {
+            sender: currentUser,
+            content: input.value.trim(),
+            timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         }
-    })
-
-    function connect() {
-        ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
-
-        ws.onopen = function() {
-            console.log("Connected to WebSocket server")
-        }
-
-        ws.onmessage = function(event) {
-            const messageDisplay = document.getElementById("messages")
-            const p = document.createElement("p")
-            p.textContent = event.data
-            messageDisplay.append(p)
-            messageDisplay.scrollTop = messageDisplay.scrollHeight
-        }
-
-        ws.onclose = function() {
-            console.log("WebSocket connection closed, retrying...")
-            setTimeout(connect, 1000)
-        }
-
-        ws.onerror = function(error) {
-            console.error("WebSocket error:", error)
-        }
+        ws.send(JSON.stringify(messageData))
+        input.value = ""
     }
+})
+
+document.getElementById("messageInput").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        document.getElementById("sendButton").click()
+    }
+})
+
+function connect() {
+    ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
+
+    ws.onopen = function() {
+        console.log("Connected to WebSocket server")
+    }
+
+    ws.onmessage = function(event) {
+        const messageDisplay = document.getElementById("messages")
+        const messageElement = document.createElement("p")
+        
+        try {
+            const messageData = JSON.parse(event.data)
+            
+            if (messageData.type === "system") {
+                messageElement.className = "system-message"
+                messageElement.innerHTML = `
+                    <span class="message-sender">SYSTEM</span>
+                    <span class="message-content">${messageData.content}</span>
+                    <span class="message-time">${messageData.timestamp || new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                `
+            } else {
+                messageElement.innerHTML = `
+                    <span class="message-sender">${messageData.sender}:</span>
+                    <span class="message-content">${messageData.content}</span>
+                    <span class="message-time">${messageData.timestamp}</span>
+                `
+            }
+        } catch (e) {
+            messageElement.innerHTML = `
+                <span class="message-sender">Unknown:</span>
+                <span class="message-content">${event.data}</span>
+                <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            `
+        }
+        
+        messageDisplay.appendChild(messageElement)
+        messageDisplay.scrollTop = messageDisplay.scrollHeight
+    }
+
+    ws.onclose = function() {
+        console.log("WebSocket connection closed, retrying...")
+        setTimeout(connect, 1000)
+    }
+
+    ws.onerror = function(error) {
+        console.error("WebSocket error:", error)
+    }
+}
 </script>
 
 
