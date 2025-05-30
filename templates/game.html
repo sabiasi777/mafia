@@ -44,11 +44,11 @@
         </div>
         <div id="roleContainer" style="display:none; font-size: 24px; text-align: center; margin-top: 20px;"></div>
         <div id="gameArea" style="display: none;">
+            <div id="messages"></div>
             <div class="chat-box">
                 <input type="text" id="messageInput" placeholder="Enter your message">
                 <button id="sendButton">Send</button>
             </div>
-            <div id="messages"></div>
         </div>
     </div>
 </div>
@@ -137,8 +137,11 @@
         }
 
         ws.onmessage = function(event) {
-            let messageDisplay = document.getElementById("messages")
-            messageDisplay.innerHTML += `<p>${event.data}</p>`
+            const messageDisplay = document.getElementById("messages")
+            const p = document.createElement("p")
+            p.textContent = event.data
+            messageDisplay.append(p)
+            messageDisplay.scrollTop = messageDisplay.scrollHeight
         }
 
         ws.onclose = function() {

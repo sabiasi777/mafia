@@ -14,54 +14,148 @@ body {
   align-items: center;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Chat positioning and styling */
+#gameArea {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #111;
+  z-index: 10;
+}
+
+#messages {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  width: 320px;
+  height: 200px;
+  background: rgba(34, 34, 34, 0.95);
+  border: 1px solid #444;
+  border-radius: 12px 12px 4px 12px;
+  padding: 15px;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+#messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+#messages::-webkit-scrollbar-track {
+  background: #333;
+  border-radius: 3px;
+}
+
+#messages::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 3px;
+}
+
+#messages::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+#messages p {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: rgba(68, 68, 68, 0.6);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+#messages p:nth-child(even) {
+  background: rgba(76, 175, 80, 0.2);
 }
 
 .chat-box {
-  position: relative;
-  top: auto;
-  right: auto;
-  width: 100%;
-  max-width: 500px;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  display: flex;
+  gap: 8px;
+  background: rgba(34, 34, 34, 0.95);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #444;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
 }
 
 #messageInput {
-    padding: 0.5rem;
-    border: none;
-    border-radius: 4px;
-    min-width: 150px;
-    max-width: 100%;
-    font-size: 1rem;
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background-color: #2a2a2a;
+  color: #f1f1f1;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+#messageInput:focus {
+  border-color: #4CAF50;
+}
+
+#messageInput::placeholder {
+  color: #aaa;
 }
 
 #sendButton {
-    padding: 0.5rem 1rem;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 #sendButton:hover {
-    background-color: #45a049;
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
+#sendButton:active {
+  transform: translateY(0);
+}
+
+/* Mobile responsiveness for chat */
 @media (max-width: 600px) {
-    .chat-box {
-        flex-direction: column;
-        right: 0.5rem;
-        left: auto;
-    }
-
-    #messageInput {
-        width: 100%;
-    }
-
-    #sendButton {
-        width: 100%;
-    }
+  #messages {
+    width: calc(100vw - 40px);
+    right: 20px;
+    left: 20px;
+    height: 150px;
+  }
+  
+  .chat-box {
+    width: calc(100vw - 40px);
+    right: 20px;
+    left: 20px;
+  }
+  
+  #messageInput {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
 }
 
+/* Rest of the existing styles */
 .players, .chat {
   flex: 1;
   background-color: #333;
@@ -159,34 +253,26 @@ button:hover {
   align-items: center;
 }
 
-#gameArea {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1rem;
-  gap: 1rem;
-}
-
 a {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    background-color: #222;
-    color: white;
-    font-weight: bold;
-    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2);
-    border: 2px solid #444;
-    padding: 10px 15px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-size: 1.4rem;
-    z-index: 1000;
-    transition: background-color 0.2s ease, transform 0.2s ease;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background-color: #222;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2);
+  border: 2px solid #444;
+  padding: 10px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 1.4rem;
+  z-index: 1000;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 a:hover {
-    background-color: #444;
-    transform: scale(1.05);
+  background-color: #444;
+  transform: scale(1.05);
 }
 
 #gameScreen {
