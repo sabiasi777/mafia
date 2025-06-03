@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -35,14 +36,18 @@ type Page struct {
 
 var rooms = make(map[string]*Room)
 var tmpl *template.Template
-var upgrader = websocket.Upgrader{}
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 var roomsConnections = make(map[string]map[*websocket.Conn]bool)
 var mu sync.Mutex
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("URL:", r.URL)
 	roomCode := r.URL.Query().Get("room")
-	fmt.Println("ROOMCODE:", roomCode)
 	if roomCode == "" {
 		http.Error(w, "Missing room code", http.StatusBadRequest)
 		return
@@ -63,7 +68,12 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		mu.Lock()
-		delete(roomsConnections[roomCode], conn)
+		if clients, exists := roomsConnections[roomCode]; exists {
+			delete(clients, conn)
+			if len(clients) == 0 {
+				delete(roomsConnections, roomCode)
+			}
+		}
 		mu.Unlock()
 		conn.Close()
 	}()
@@ -73,7 +83,7 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 func handleConnection(conn *websocket.Conn, roomCode string) {
 	for {
-		_, msg, err := conn.ReadMessage()
+		msgType, msg, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("Read error:", err)
 			break
@@ -81,8 +91,17 @@ func handleConnection(conn *websocket.Conn, roomCode string) {
 
 		mu.Lock()
 		for client := range roomsConnections[roomCode] {
-			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-				fmt.Println("Error writing message:", err)
+			if msgType == websocket.TextMessage {
+				if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+					fmt.Println("Error writing message:", err)
+				}
+			} else if msgType == websocket.BinaryMessage {
+				fmt.Println("Data size:", len(msg))
+				fmt.Printf("MsgType:%T\n", msg)
+				fmt.Println("First few bytes:", msg[:10])
+				if err := client.WriteMessage(websocket.BinaryMessage, msg); err != nil {
+					fmt.Println("Error writing message:", err)
+				}
 			}
 		}
 		mu.Unlock()
@@ -211,7 +230,40 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(room.Players)
 }
 
+func handleAudio(w http.ResponseWriter, r *http.Request) {
+	roomCode := r.URL.Query().Get("room")
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println("errro reading the body:", err)
+		return
+	}
+
+	fmt.Println("Data size:", len(data))
+	fmt.Printf("MsgType:%T\n", data)
+	fmt.Println("First few bytes:", data[:10])
+
+	mu.Lock()
+	for client := range roomsConnections[roomCode] {
+		if err := client.WriteMessage(websocket.BinaryMessage, data); err != nil {
+			fmt.Println("Error writing message:", err)
+		}
+	}
+	mu.Unlock()
+}
+
 func main() {
+	permanentRoomCode := "ADMIN"
+	room := Room{
+		Code: permanentRoomCode,
+		Players: []Player{
+			{Name: "Saba", Role: "Villager", IsActive: true},
+			{Name: "Beqa", Role: "Villager", IsActive: true},
+			{Name: "Nodo", Role: "Doctor", IsActive: true},
+		},
+	}
+	rooms[permanentRoomCode] = &room
+
 	tmpl = template.Must(template.ParseGlob("templates/*.html"))
 	fs := http.FileServer(http.Dir("assets"))
 
@@ -223,6 +275,7 @@ func main() {
 	http.HandleFunc("/create", createRoom)
 	http.HandleFunc("/start", startGame)
 	http.HandleFunc("/ws/chat", handleChat)
+	http.HandleFunc("/audio", handleAudio)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

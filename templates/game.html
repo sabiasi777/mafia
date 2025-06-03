@@ -49,6 +49,7 @@
                 <input type="text" id="messageInput" placeholder="Enter your message">
                 <button id="sendButton">Send</button>
             </div>
+            <button id="microphoneButton">Microphone</button>
         </div>
     </div>
 </div>
@@ -60,9 +61,16 @@
     const gameArea = document.getElementById('gameArea');
     const gameScreen = document.getElementById('gameScreen');
     const sendButton = document.getElementById("sendButton")
+    const microphoneButton = document.getElementById("microphoneButton")
     
     var roomCode
     var ws
+    var stream
+    var mediaRecorder
+
+    var chunks = []
+
+    var micMode = false
 
     function checkPlayerCount() {
         const playerCount = playerList.querySelectorAll("li").length
@@ -118,7 +126,7 @@
         setTimeout(() => {
             roleContainer.style.display = "none"
             document.getElementById("gameArea").style.display = "block"
-        }, 5000)
+        }, 3000)
     }
 
     sendButton.addEventListener("click", () => {
@@ -141,6 +149,8 @@ document.getElementById("messageInput").addEventListener("keypress", (e) => {
     }
 })
 
+microphoneButton.addEventListener("click", sendAudio)
+
 function connect() {
     ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
 
@@ -149,36 +159,40 @@ function connect() {
     }
 
     ws.onmessage = function(event) {
-        const messageDisplay = document.getElementById("messages")
-        const messageElement = document.createElement("p")
+        if (event.data instanceof Blob) {
+            const audio = new Audio()
+            const audioBlob = new Blob([event.data], { type: event.data.type || "audio/webm" });
+            const audioURL = URL.createObjectURL(audioBlob);
+            audio.src = audioURL;
         
-        try {
-            const messageData = JSON.parse(event.data)
+            audio.play()
+
+            audio.onended = () => {
+                URL.revokeObjectURL(audioURL)
+            }
+        } else {
+
+            const messageDisplay = document.getElementById("messages")
+            const messageElement = document.createElement("p")
             
-            if (messageData.type === "system") {
-                messageElement.className = "system-message"
-                messageElement.innerHTML = `
-                    <span class="message-sender">SYSTEM</span>
-                    <span class="message-content">${messageData.content}</span>
-                    <span class="message-time">${messageData.timestamp || new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                `
-            } else {
+            try {
+                const messageData = JSON.parse(event.data)
                 messageElement.innerHTML = `
                     <span class="message-sender">${messageData.sender}:</span>
                     <span class="message-content">${messageData.content}</span>
                     <span class="message-time">${messageData.timestamp}</span>
                 `
+            } catch (e) {
+                messageElement.innerHTML = `
+                    <span class="message-sender">Unknown:</span>
+                    <span class="message-content">${event.data}</span>
+                    <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                `
             }
-        } catch (e) {
-            messageElement.innerHTML = `
-                <span class="message-sender">Unknown:</span>
-                <span class="message-content">${event.data}</span>
-                <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-            `
+            
+            messageDisplay.appendChild(messageElement)
+            messageDisplay.scrollTop = messageDisplay.scrollHeight
         }
-        
-        messageDisplay.appendChild(messageElement)
-        messageDisplay.scrollTop = messageDisplay.scrollHeight
     }
 
     ws.onclose = function() {
@@ -190,6 +204,39 @@ function connect() {
         console.error("WebSocket error:", error)
     }
 }
+
+async function sendAudio() {
+    if (!stream) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    }
+
+    if (!mediaRecorder) {
+        mediaRecorder = new MediaRecorder(stream)
+
+        mediaRecorder.ondataavailable = (e) => {
+            chunks.push(e.data)
+
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(e.data)
+            }
+        }
+
+        mediaRecorder.onstop = () => {
+            chunks = []
+        }
+    }
+
+    micMode = !micMode
+
+    if(micMode) {
+        console.log("Microphone is on")
+        mediaRecorder.start(1000)
+    } else {
+        console.log("Microphone is off")
+        mediaRecorder.stop()
+    }
+}
+
 </script>
 
 
