@@ -49,7 +49,7 @@
                 <input type="text" id="messageInput" placeholder="Enter your message">
                 <button id="sendButton">Send</button>
             </div>
-            <button id="microphoneButton">Microphone</button>
+            <button id="microphoneButton" class="muted">🔇</button>
         </div>
     </div>
 </div>
@@ -153,21 +153,23 @@ microphoneButton.addEventListener("click", sendAudio)
 
 function connect() {
     ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
+    ws.binaryType = "arraybuffer"
 
     ws.onopen = function() {
         console.log("Connected to WebSocket server")
     }
 
     ws.onmessage = function(event) {
-        if (event.data instanceof Blob) {
-            const audio = new Audio()
-            const audioBlob = new Blob([event.data], { type: event.data.type || "audio/webm" });
+        if (event.data instanceof ArrayBuffer) {
+            const audioBlob = new Blob([event.data], { type: "audio/webm" });
             const audioURL = URL.createObjectURL(audioBlob);
-            audio.src = audioURL;
+            const PAudio = new Audio(audioURL)
         
-            audio.play()
+            PAudio.play().catch(err => {
+                console.error("Audio playback failed:", err)
+            })
 
-            audio.onended = () => {
+            PAudio.onended = () => {
                 URL.revokeObjectURL(audioURL)
             }
         } else {
@@ -213,11 +215,25 @@ async function sendAudio() {
     if (!mediaRecorder) {
         mediaRecorder = new MediaRecorder(stream)
 
-        mediaRecorder.ondataavailable = (e) => {
-            chunks.push(e.data)
+        mediaRecorder.ondataavailable = async (e) => {
+            if (e.data.size > 0) {
+                const arrayBuffer = await e.data.arrayBuffer()
+                const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
 
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(e.data)
+                console.log(e.data)
+                chunks.push(e.data)
+
+                fetch("http://localhost:8080/audio", {
+                    method: "POST",
+                    headers: {
+                        "Room-Code": roomCode,
+                        "Content-Type": "audio/webm"
+                    },
+                    body: JSON.stringify({
+                        mimeType: e.data.type,
+                        audio: base64Data
+                    })
+                })
             }
         }
 
@@ -226,14 +242,26 @@ async function sendAudio() {
         }
     }
 
-    micMode = !micMode
+    toggleMicrophone()
 
     if(micMode) {
         console.log("Microphone is on")
-        mediaRecorder.start(1000)
+        mediaRecorder.start(100)
     } else {
         console.log("Microphone is off")
         mediaRecorder.stop()
+    }
+}
+
+function toggleMicrophone() {
+    micMode = !micMode;
+    
+    if (micMode) {
+        microphoneButton.className = 'unmuted';
+        microphoneButton.textContent = '🎙️';
+    } else {
+        microphoneButton.className = 'muted';
+        microphoneButton.textContent = '🔇';
     }
 }
 

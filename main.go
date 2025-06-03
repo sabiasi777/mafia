@@ -1,10 +1,10 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -32,6 +32,11 @@ type Room struct {
 type Page struct {
 	Title string
 	Body  []byte
+}
+
+type AudioMessage struct {
+	MimeType string `json:"mimeType"`
+	Audio    string `json:"audio"` // base64
 }
 
 var rooms = make(map[string]*Room)
@@ -83,7 +88,7 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 func handleConnection(conn *websocket.Conn, roomCode string) {
 	for {
-		msgType, msg, err := conn.ReadMessage()
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("Read error:", err)
 			break
@@ -91,17 +96,8 @@ func handleConnection(conn *websocket.Conn, roomCode string) {
 
 		mu.Lock()
 		for client := range roomsConnections[roomCode] {
-			if msgType == websocket.TextMessage {
-				if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-					fmt.Println("Error writing message:", err)
-				}
-			} else if msgType == websocket.BinaryMessage {
-				fmt.Println("Data size:", len(msg))
-				fmt.Printf("MsgType:%T\n", msg)
-				fmt.Println("First few bytes:", msg[:10])
-				if err := client.WriteMessage(websocket.BinaryMessage, msg); err != nil {
-					fmt.Println("Error writing message:", err)
-				}
+			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+				fmt.Println("Error writing message:", err)
 			}
 		}
 		mu.Unlock()
@@ -231,25 +227,33 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAudio(w http.ResponseWriter, r *http.Request) {
-	roomCode := r.URL.Query().Get("room")
+	roomCode := r.Header.Get("Room-Code")
 
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println("errro reading the body:", err)
+	var msg AudioMessage
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		fmt.Println("Invalid JSON:", err)
 		return
 	}
 
-	fmt.Println("Data size:", len(data))
-	fmt.Printf("MsgType:%T\n", data)
-	fmt.Println("First few bytes:", data[:10])
+	audioData, err := base64.StdEncoding.DecodeString(msg.Audio)
+	if err != nil {
+		fmt.Println("Base64 decode error:", err)
+		return
+	}
 
-	mu.Lock()
+	outgoing, _ := json.Marshal(struct {
+		MimeType string `json:"mimeType"`
+		Audio    []byte `json:"audio"`
+	}{
+		MimeType: msg.MimeType,
+		Audio:    audioData,
+	})
+
 	for client := range roomsConnections[roomCode] {
-		if err := client.WriteMessage(websocket.BinaryMessage, data); err != nil {
-			fmt.Println("Error writing message:", err)
+		if err := client.WriteMessage(websocket.TextMessage, outgoing); err != nil {
+			fmt.Println("WriteMessage message:", err)
 		}
 	}
-	mu.Unlock()
 }
 
 func main() {

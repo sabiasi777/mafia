@@ -298,3 +298,79 @@ a:hover {
   list-style-type: square;
   padding-left: 20px;
 }
+
+#microphoneButton {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+ /* Unmuted state (active) */
+ #microphoneButton.unmuted {
+     background: linear-gradient(135deg, #4CAF50, #45a049);
+     color: white;
+     border: 2px solid #4CAF50;
+ }
+ #microphoneButton.unmuted:hover {
+     background: linear-gradient(135deg, #45a049, #3d8b40);
+     transform: translateY(-2px) scale(1.05);
+     box-shadow: 0 12px 32px rgba(76, 175, 80, 0.4);
+ }
+ /* Muted state (inactive) */
+ #microphoneButton.muted {
+     background: linear-gradient(135deg, #f44336, #d32f2f);
+     color: white;
+     border: 2px solid #f44336;
+ }
+ #microphoneButton.muted:hover {
+     background: linear-gradient(135deg, #d32f2f, #c62828);
+     transform: translateY(-2px) scale(1.05);
+     box-shadow: 0 12px 32px rgba(244, 67, 54, 0.4);
+ }
+ /* Active press effect */
+ #microphoneButton:active {
+     transform: translateY(0) scale(0.98);
+ }
+ /* Pulsing animation for active microphone */
+ #microphoneButton.unmuted.recording {
+     animation: micPulse 1.5s ease-in-out infinite;
+ }
+ @keyframes micPulse {
+     0%, 100% {
+         box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4);
+     }
+     50% {
+         box-shadow: 0 8px 24px rgba(76, 175, 80, 0.8), 0 0 0 10px rgba(76, 175, 80, 0.2);
+     }
+ }
+ /* Mobile responsiveness */
+ @media (max-width: 600px) {
+     #microphoneButton {
+         width: 50px;
+         height: 50px;
+         font-size: 1.2rem;
+         bottom: 100px;
+         left: 20px;
+     }
+     
+     .chat-box {
+         width: calc(100vw - 40px);
+         right: 20px;
+         left: 20px;
+     }
+ }
