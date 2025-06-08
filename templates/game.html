@@ -161,15 +161,19 @@ function connect() {
 
     ws.onmessage = function(event) {
         if (event.data instanceof ArrayBuffer) {
+	     console.log("ws.onmessage is being run")
             const audioBlob = new Blob([event.data], { type: "audio/webm" });
-            const audioURL = URL.createObjectURL(audioBlob);
-            const PAudio = new Audio(audioURL)
+		const audioURL = URL.createObjectURL(audioBlob); 
+		const audio = new Audio(audioURL);
+		
+	console.log(audioBlob, audioURL)
+	console.log(event.data.byteLength)
         
-            PAudio.play().catch(err => {
+            audio.play().catch(err => {
                 console.error("Audio playback failed:", err)
             })
 
-            PAudio.onended = () => {
+            audio.onended = () => {
                 URL.revokeObjectURL(audioURL)
             }
         } else {
@@ -246,7 +250,7 @@ async function sendAudio() {
 
     if(micMode) {
         console.log("Microphone is on")
-        mediaRecorder.start(100)
+        mediaRecorder.start(5000)
     } else {
         console.log("Microphone is off")
         mediaRecorder.stop()

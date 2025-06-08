@@ -229,11 +229,15 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 func handleAudio(w http.ResponseWriter, r *http.Request) {
 	roomCode := r.Header.Get("Room-Code")
 
+	fmt.Println("roomCode in handleAudio:", roomCode)
+
 	var msg AudioMessage
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		fmt.Println("Invalid JSON:", err)
 		return
 	}
+
+	fmt.Println("audimsg:", msg)
 
 	audioData, err := base64.StdEncoding.DecodeString(msg.Audio)
 	if err != nil {
@@ -241,16 +245,18 @@ func handleAudio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outgoing, _ := json.Marshal(struct {
-		MimeType string `json:"mimeType"`
-		Audio    []byte `json:"audio"`
-	}{
-		MimeType: msg.MimeType,
-		Audio:    audioData,
-	})
+	fmt.Println("audioData:", audioData)
+
+	//	outgoing, _ := json.Marshal(struct {
+	//		MimeType string `json:"mimeType"`
+	//		Audio    []byte `json:"audio"`
+	//	}{
+	//		MimeType: msg.MimeType,
+	//		Audio:    audioData,
+	//	})
 
 	for client := range roomsConnections[roomCode] {
-		if err := client.WriteMessage(websocket.TextMessage, outgoing); err != nil {
+		if err := client.WriteMessage(websocket.BinaryMessage, audioData); err != nil {
 			fmt.Println("WriteMessage message:", err)
 		}
 	}
