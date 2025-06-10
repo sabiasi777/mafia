@@ -4,72 +4,134 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mafia Game</title>
-  <link rel="stylesheet" type="text/css" href="../assets/css/index.css" />
+  <link rel="stylesheet" href="../assets/css/index.css">
 </head>
 <body>
   <div class="container">
-    <!-- Join Screen -->
-    <div id="joinScreen" class="centered">
-      <h1>Join Mafia Game</h1>
+    <div class="game-card">
+      <div class="game-header">
+        <h1 class="game-title">MAFIA</h1>
+        <p class="game-subtitle">Deception • Strategy • Survival</p>
+      </div>
 
-      <!-- Form to Join a Room -->
-      <form action="http://localhost:8080/join" method="POST" id="joinForm">
-        <input type="text" id="nameInput" name="username" placeholder="Enter your name" required />
-        <input type="text" id="roomInput" name="roomcode" placeholder="Enter room code" required />
-        <button type="submit">Join</button>
-      </form>
-
-      <!-- Form to Create a Room -->
-      <div id="create-room-form">
-        <h2>Create a Room</h2>
-        <form action="http://localhost:8080/create" method="POST">
-          <input type="text" name="username" placeholder="Your Name" required />
-          <button type="submit">Create Room</button>
+      <!-- Join Room Section -->
+      <div class="form-section">
+        <h2 class="section-title">Join Game</h2>
+        <form action="http://localhost:8080/join" method="POST" id="joinForm">
+          <input type="text" class="input-field" id="nameInput" name="username" placeholder="Enter your name" required />
+          <input type="text" class="input-field" id="roomInput" name="roomcode" placeholder="Enter room code" required />
+          <button type="submit" class="btn btn-primary">Join Game</button>
         </form>
       </div>
-        <section class="info">
-          <button id="rulesBtn">Rules</button>
 
-          <div id="rulesModal" class="modal hidden">
-            <div class="modal-content">
-              <span id="closeRules" class="close">&times;</span>
-              <h2>Game Rules</h2>
-              <p>Mafia is a game of deception and deduction. Each player is assigned a role...</p>
+      <div class="divider">
+        <span>OR</span>
+      </div>
 
-              <h3>Roles</h3>
-              <ul>
-                <li><strong>Mafia:</strong> Eliminate other players without being discovered.</li>
-                <li><strong>Detective:</strong> Investigate players to find out if they are mafia.</li>
-                <li><strong>Doctor:</strong> Protect one player per night from being killed.</li>
-                <li><strong>Villager:</strong> Try to identify the mafia and vote them out.</li>
-              </ul>
-            </div>
-          </div>
-        </section>
+      <!-- Create Room Section -->
+      <div class="form-section">
+        <h2 class="section-title">Create Room</h2>
+        <form action="http://localhost:8080/create" method="POST">
+          <input type="text" class="input-field" name="username" placeholder="Your name" required />
+          <button type="submit" class="btn btn-secondary">Create New Room</button>
+        </form>
+      </div>
+
+      <div class="rules-section">
+        <button id="rulesBtn" class="rules-btn">📖 Game Rules</button>
+      </div>
     </div>
-   </div>
+  </div>
 
-   <script>
+  <!-- Rules Modal -->
+  <div id="rulesModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Game Rules</h2>
+        <button id="closeRules" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Mafia is a social deduction game where players are divided into two main factions: the <strong>Town</strong> and the <strong>Mafia</strong>. The goal is to eliminate the opposing faction through strategy, deception, and careful analysis.</p>
+
+        <h3>🎯 Objective</h3>
+        <p><strong>Town:</strong> Identify and eliminate all Mafia members.<br>
+        <strong>Mafia:</strong> Eliminate enough Town members to equal or outnumber them.</p>
+
+        <h3>👥 Roles</h3>
+        <ul>
+          <li>
+            <div>
+              <strong>Mafia:</strong> Work together to eliminate Town members during the night phase. They know each other's identities and can communicate secretly.
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Detective:</strong> Can investigate one player each night to learn if they are Mafia or Town. This information is crucial for guiding Town decisions.
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Doctor:</strong> Can protect one player each night from being eliminated. They can even protect themselves, but cannot protect the same person twice in a row.
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Villager:</strong> Regular Town members who must use logic, observation, and discussion to identify Mafia members during the day phase.
+            </div>
+          </li>
+        </ul>
+
+        <h3>🌙 Game Flow</h3>
+        <p><strong>Night Phase:</strong> All players close their eyes. Mafia members choose a target to eliminate. Special roles (Detective, Doctor) perform their actions.</p>
+        <p><strong>Day Phase:</strong> Players discuss who they suspect is Mafia and vote to eliminate someone. The player with the most votes is eliminated.</p>
+        <p>The game alternates between these phases until one faction achieves their win condition.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
     const rulesBtn = document.getElementById('rulesBtn');
     const rulesModal = document.getElementById('rulesModal');
     const closeRules = document.getElementById('closeRules');
 
-    rulesBtn.addEventListener('click', () => {
-      rulesModal.classList.remove('hidden');
-      rulesModal.style.display = 'block';
-    });
+    function showModal() {
+      rulesModal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
 
-    closeRules.addEventListener('click', () => {
-      rulesModal.classList.add('hidden');
-      rulesModal.style.display = 'none';
-    });
+    function hideModal() {
+      rulesModal.classList.remove('show');
+      document.body.style.overflow = 'auto';
+    }
 
-    window.addEventListener('click', (event) => {
-      if (event.target == rulesModal) {
-        rulesModal.classList.add('hidden');
-        rulesModal.style.display = 'none';
+    rulesBtn.addEventListener('click', showModal);
+    closeRules.addEventListener('click', hideModal);
+
+    rulesModal.addEventListener('click', (event) => {
+      if (event.target === rulesModal) {
+        hideModal();
       }
     });
-   </script>
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && rulesModal.classList.contains('show')) {
+        hideModal();
+      }
+    });
+
+    // Add subtle floating animation to the card
+    const gameCard = document.querySelector('.game-card');
+    let floatDirection = 1;
+    
+    setInterval(() => {
+      const currentTransform = gameCard.style.transform || 'translateY(0px)';
+      const currentY = parseFloat(currentTransform.match(/translateY\(([^)]+)\)/)?.[1] || 0);
+      
+      if (currentY >= 3) floatDirection = -1;
+      if (currentY <= -3) floatDirection = 1;
+      
+      gameCard.style.transform = `translateY(${currentY + (floatDirection * 0.1)}px)`;
+    }, 100);
+  </script>
 </body>
 </html>

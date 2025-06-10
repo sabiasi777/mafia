@@ -1,275 +1,300 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Mafia Game</title>
-    <link rel="stylesheet" href="/assets/css/game.css"/>
+    <link rel="stylesheet" href="../assets/css/game.css">
 </head>
-  <body>
-    <a href="http://localhost:8080">Mafia</a>
+<body>
+    <a href="http://localhost:8080" class="home-link">← Mafia</a>
+    
     <div class="container">
-        <div id="gameScreen" class="centered">
-        <header>
-            <h1>Welcome to Room: {{.Code}}</h1>
-        </header>
+        <div id="gameScreen" class="game-card">
+            <header>
+                <h1>Room: {{.Code}}</h1>
+            </header>
 
-        <section class="game-info" id="gameInfo">
-            <div class="players">
-                <h2>Players {{len .Players}}</h2>
-                <ul id="playerList">
-                {{range .Players}}
-                    <li class="{{if .IsActive}}active{{end}}">{{.Name}}</li>
-                {{end}}
-                </ul>
-            </div>
-
-            {{ if .ActiveRoles }}
-                <div class="roles-info">
-                    <h2>Active Roles</h2>
-                    <ul id="roleList">
-                        {{range .ActiveRoles}}
-                            <li>{{.}}</li>
+            <div class="game-info" id="gameInfo">
+                <div class="info-section">
+                    <h2>Players <span class="player-count">{{len .Players}}</span></h2>
+                    <ul class="player-list" id="playerList">
+                        {{range .Players}}
+                            <li class="player-item {{if .IsActive}}active{{end}}">{{.Name}}</li>
                         {{end}}
                     </ul>
                 </div>
-            {{ else }}
-                <p class="warning">Not enough players to start the game. Minimum: 4</p>
-            {{ end }}
 
-            <button class="startBtn" id="startButton" type="button" disabled>Start</button>
-
-            
-        </section>
-        <div id="statusBar" style="margin-top: 1rem; font-size: 1.2rem;">
-            Waiting for players...
-        </div>
-        <div id="roleContainer" style="display:none; font-size: 24px; text-align: center; margin-top: 20px;"></div>
-        <div id="gameArea" style="display: none;">
-            <div id="messages"></div>
-            <div class="chat-box">
-                <input type="text" id="messageInput" placeholder="Enter your message">
-                <button id="sendButton">Send</button>
+                {{ if .ActiveRoles }}
+                    <div class="info-section">
+                        <h2>Active Roles</h2>
+                        <ul class="role-list" id="roleList">
+                            {{range .ActiveRoles}}
+                                <li class="role-item">{{.}}</li>
+                            {{end}}
+                        </ul>
+                    </div>
+                {{ else }}
+                    <div class="warning">
+                        ⚠️ Not enough players to start the game. Minimum: 4
+                    </div>
+                {{ end }}
             </div>
-            <button id="microphoneButton" class="muted">🔇</button>
+
+            <button class="start-button" id="startButton" type="button" disabled>
+                🎮 Start Game
+            </button>
+
+            <div class="status-bar" id="statusBar">
+                Waiting for players to join...
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    const startButton = document.getElementById("startButton")
-    const playerList = document.getElementById("playerList")
-    const roleContainer = document.getElementById('roleContainer');
-    const gameArea = document.getElementById('gameArea');
-    const gameScreen = document.getElementById('gameScreen');
-    const sendButton = document.getElementById("sendButton")
-    const microphoneButton = document.getElementById("microphoneButton")
-    
-    var roomCode
-    var ws
-    var stream
-    var mediaRecorder
+    <div id="roleContainer" class="role-reveal">
+        <div class="role-text" id="roleText"></div>
+    </div>
 
-    var chunks = []
+    <div id="gameArea" class="game-area">
+        <div class="chat-container">
+            <div id="messages" class="messages"></div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" class="message-input" placeholder="Type your message...">
+                <button id="sendButton" class="send-button">Send</button>
+            </div>
+        </div>
+        <button id="microphoneButton" class="mic-button muted">🔇</button>
+    </div>
 
-    var micMode = false
-
-    function checkPlayerCount() {
-        const playerCount = playerList.querySelectorAll("li").length
-        startButton.disabled = playerCount < 4
-    }
-
-    checkPlayerCount()
-
-    const observer = new MutationObserver(checkPlayerCount)
-    observer.observe(playerList, { childList: true })
-
-    startButton.addEventListener('click', () => {
-        roomCode = window.location.pathname.split("/").pop()
-        fetch("http://localhost:8080/start", {
-            method: "POST",
-            headers: {
-                'Content-Type': "application/json"
-            },
-            body: JSON.stringify({ roomCode })
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("Failed to start game")
-            return res.json()
-        })
-        .then(data => {
-            connect()
-
-            const currentUser = getCurrentUserNameFromURL()
-            const me = data.find(p => p.name === currentUser)
-            console.log(me)
-            if (me) {
-                startGameUI(me)
-            }
-        })
-        .catch(err => console.error(err))
-    })
-
-    function getCurrentUserNameFromURL() {
-        const params = new URLSearchParams(window.location.search)
-        return params.get("user")
-    }
-
-    function startGameUI(me) {
-        document.getElementById("roleContainer").style.display = "none"
-        document.getElementById("gameInfo").style.display = "none"
-        document.getElementById("statusBar").style.display = "none"
-        document.getElementsByTagName("header")[0].style.display = "none"
-
-        const roleContainer = document.getElementById("roleContainer")
-        roleContainer.textContent = `Your role is: ${me.role}`
-        roleContainer.style.display = "block"
-
-        setTimeout(() => {
-            roleContainer.style.display = "none"
-            document.getElementById("gameArea").style.display = "block"
-        }, 3000)
-    }
-
-    sendButton.addEventListener("click", () => {
-    const input = document.getElementById("messageInput")
-    if (input.value.trim()) {
-        const currentUser = getCurrentUserNameFromURL()
-        const messageData = {
-            sender: currentUser,
-            content: input.value.trim(),
-            timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-        }
-        ws.send(JSON.stringify(messageData))
-        input.value = ""
-    }
-})
-
-document.getElementById("messageInput").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-        document.getElementById("sendButton").click()
-    }
-})
-
-microphoneButton.addEventListener("click", sendAudio)
-
-function connect() {
-    ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
-    ws.binaryType = "arraybuffer"
-
-    ws.onopen = function() {
-        console.log("Connected to WebSocket server")
-    }
-
-    ws.onmessage = function(event) {
-        if (event.data instanceof ArrayBuffer) {
-	     console.log("ws.onmessage is being run")
-            const audioBlob = new Blob([event.data], { type: "audio/webm" });
-		const audioURL = URL.createObjectURL(audioBlob); 
-		const audio = new Audio(audioURL);
-		
-	console.log(audioBlob, audioURL)
-	console.log(event.data.byteLength)
+    <script>
+        const startButton = document.getElementById("startButton")
+        const playerList = document.getElementById("playerList")
+        const roleContainer = document.getElementById('roleContainer');
+        const roleText = document.getElementById('roleText');
+        const gameArea = document.getElementById('gameArea');
+        const gameScreen = document.getElementById('gameScreen');
+        const sendButton = document.getElementById("sendButton")
+        const microphoneButton = document.getElementById("microphoneButton")
         
-            audio.play().catch(err => {
-                console.error("Audio playback failed:", err)
+        var roomCode
+        var ws
+        var stream
+        var mediaRecorder
+        var chunks = []
+        var micMode = false
+
+        function checkPlayerCount() {
+            const playerCount = playerList.querySelectorAll("li").length
+            const countElement = document.querySelector('.player-count');
+            if (countElement) {
+                countElement.textContent = playerCount;
+            }
+            startButton.disabled = playerCount < 4
+            
+            if (playerCount >= 4) {
+                startButton.innerHTML = '🎮 Start Game';
+            } else {
+                startButton.innerHTML = `🎮 Need ${4 - playerCount} more players`;
+            }
+        }
+
+        checkPlayerCount()
+
+        const observer = new MutationObserver(checkPlayerCount)
+        observer.observe(playerList, { childList: true })
+
+        startButton.addEventListener('click', () => {
+            roomCode = window.location.pathname.split("/").pop()
+            fetch("http://localhost:8080/start", {
+                method: "POST",
+                headers: {
+                    'Content-Type': "application/json"
+                },
+                body: JSON.stringify({ roomCode })
             })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to start game")
+                return res.json()
+            })
+            .then(data => {
+                connect()
+                const currentUser = getCurrentUserNameFromURL()
+                const me = data.find(p => p.name === currentUser)
+                if (me) {
+                    startGameUI(me)
+                }
+            })
+            .catch(err => console.error(err))
+        })
 
-            audio.onended = () => {
-                URL.revokeObjectURL(audioURL)
-            }
-        } else {
-
-            const messageDisplay = document.getElementById("messages")
-            const messageElement = document.createElement("p")
-            
-            try {
-                const messageData = JSON.parse(event.data)
-                messageElement.innerHTML = `
-                    <span class="message-sender">${messageData.sender}:</span>
-                    <span class="message-content">${messageData.content}</span>
-                    <span class="message-time">${messageData.timestamp}</span>
-                `
-            } catch (e) {
-                messageElement.innerHTML = `
-                    <span class="message-sender">Unknown:</span>
-                    <span class="message-content">${event.data}</span>
-                    <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                `
-            }
-            
-            messageDisplay.appendChild(messageElement)
-            messageDisplay.scrollTop = messageDisplay.scrollHeight
+        function getCurrentUserNameFromURL() {
+            const params = new URLSearchParams(window.location.search)
+            return params.get("user")
         }
-    }
 
-    ws.onclose = function() {
-        console.log("WebSocket connection closed, retrying...")
-        setTimeout(connect, 1000)
-    }
+        function startGameUI(me) {
+            document.getElementById("gameInfo").style.display = "none"
+            document.getElementById("statusBar").style.display = "none"
+            document.getElementsByTagName("header")[0].style.display = "none"
+            startButton.style.display = "none"
 
-    ws.onerror = function(error) {
-        console.error("WebSocket error:", error)
-    }
-}
+            roleText.textContent = `Your role: ${me.role}`
+            roleContainer.style.display = "flex"
 
-async function sendAudio() {
-    if (!stream) {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    }
+            setTimeout(() => {
+                roleContainer.style.display = "none"
+                gameArea.style.display = "block"
+            }, 3000)
+        }
 
-    if (!mediaRecorder) {
-        mediaRecorder = new MediaRecorder(stream)
+        sendButton.addEventListener("click", () => {
+            const input = document.getElementById("messageInput")
+            if (input.value.trim()) {
+                const currentUser = getCurrentUserNameFromURL()
+                const messageData = {
+                    sender: currentUser,
+                    content: input.value.trim(),
+                    timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                }
+                ws.send(JSON.stringify(messageData))
+                input.value = ""
+            }
+        })
 
-        mediaRecorder.ondataavailable = async (e) => {
-            if (e.data.size > 0) {
-                const arrayBuffer = await e.data.arrayBuffer()
-                const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+        document.getElementById("messageInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                sendButton.click()
+            }
+        })
 
-                console.log(e.data)
-                chunks.push(e.data)
+        microphoneButton.addEventListener("click", sendAudio)
 
-                fetch("http://localhost:8080/audio", {
-                    method: "POST",
-                    headers: {
-                        "Room-Code": roomCode,
-                        "Content-Type": "audio/webm"
-                    },
-                    body: JSON.stringify({
-                        mimeType: e.data.type,
-                        audio: base64Data
+        function connect() {
+            ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
+            ws.binaryType = "arraybuffer"
+
+            ws.onopen = function() {
+                console.log("Connected to WebSocket server")
+            }
+
+            ws.onmessage = function(event) {
+                if (event.data instanceof ArrayBuffer) {
+                    const audioBlob = new Blob([event.data], { type: "audio/webm" });
+                    const audioURL = URL.createObjectURL(audioBlob); 
+                    const audio = new Audio(audioURL);
+                    
+                    audio.play().catch(err => {
+                        console.error("Audio playback failed:", err)
                     })
-                })
+
+                    audio.onended = () => {
+                        URL.revokeObjectURL(audioURL)
+                    }
+                } else {
+                    const messageDisplay = document.getElementById("messages")
+                    const messageElement = document.createElement("div")
+                    messageElement.className = "message"
+                    
+                    try {
+                        const messageData = JSON.parse(event.data)
+                        messageElement.innerHTML = `
+                            <div class="message-sender">${messageData.sender}</div>
+                            <div class="message-content">${messageData.content}</div>
+                            <div class="message-time">${messageData.timestamp}</div>
+                        `
+                    } catch (e) {
+                        messageElement.innerHTML = `
+                            <div class="message-sender">Unknown</div>
+                            <div class="message-content">${event.data}</div>
+                            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                        `
+                    }
+                    
+                    messageDisplay.appendChild(messageElement)
+                    messageDisplay.scrollTop = messageDisplay.scrollHeight
+                }
+            }
+
+            ws.onclose = function() {
+                console.log("WebSocket connection closed, retrying...")
+                setTimeout(connect, 1000)
+            }
+
+            ws.onerror = function(error) {
+                console.error("WebSocket error:", error)
             }
         }
 
-        mediaRecorder.onstop = () => {
-            chunks = []
+        async function sendAudio() {
+            if (!stream) {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            }
+
+            if (!mediaRecorder) {
+                mediaRecorder = new MediaRecorder(stream)
+
+                mediaRecorder.ondataavailable = async (e) => {
+                    if (e.data.size > 0) {
+                        const arrayBuffer = await e.data.arrayBuffer()
+                        const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+
+                        chunks.push(e.data)
+
+                        fetch("http://localhost:8080/audio", {
+                            method: "POST",
+                            headers: {
+                                "Room-Code": roomCode,
+                                "Content-Type": "audio/webm"
+                            },
+                            body: JSON.stringify({
+                                mimeType: e.data.type,
+                                audio: base64Data
+                            })
+                        })
+                    }
+                }
+
+                mediaRecorder.onstop = () => {
+                    chunks = []
+                }
+            }
+
+            toggleMicrophone()
+
+            if(micMode) {
+                mediaRecorder.start(5000)
+            } else {
+                mediaRecorder.stop()
+            }
         }
-    }
 
-    toggleMicrophone()
+        function toggleMicrophone() {
+            micMode = !micMode;
+            
+            if (micMode) {
+                microphoneButton.className = 'mic-button unmuted';
+                microphoneButton.textContent = '🎙️';
+            } else {
+                microphoneButton.className = 'mic-button muted';
+                microphoneButton.textContent = '🔇';
+            }
+        }
 
-    if(micMode) {
-        console.log("Microphone is on")
-        mediaRecorder.start(5000)
-    } else {
-        console.log("Microphone is off")
-        mediaRecorder.stop()
-    }
-}
-
-function toggleMicrophone() {
-    micMode = !micMode;
-    
-    if (micMode) {
-        microphoneButton.className = 'unmuted';
-        microphoneButton.textContent = '🎙️';
-    } else {
-        microphoneButton.className = 'muted';
-        microphoneButton.textContent = '🔇';
-    }
-}
-
-</script>
-
-
-</body></html>
+        // Add subtle floating animation to the card
+        const gameCard = document.querySelector('.game-card');
+        let floatDirection = 1;
+        
+        setInterval(() => {
+            if (!gameCard.matches(':hover')) {
+                const currentTransform = gameCard.style.transform.match(/translateY\(([^)]+)\)/);
+                const currentY = currentTransform ? parseFloat(currentTransform[1]) : 0;
+                
+                if (currentY >= 2) floatDirection = -1;
+                if (currentY <= -2) floatDirection = 1;
+                
+                gameCard.style.transform = `translateY(${currentY + (floatDirection * 0.05)}px)`;
+            }
+        }, 100);
+    </script>
+</body>
+</html>
