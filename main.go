@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -250,17 +251,20 @@ func handleAudio(w http.ResponseWriter, r *http.Request) {
 
 	message := struct {
 		MimeType string `json:"mimeType"`
-		Audio    []byte `json:"audio"`
+		Audio    string `json:"audio"`
 	}{
 		MimeType: mimeType,
-		Audio:    audioData,
+		Audio:    base64.StdEncoding.EncodeToString(audioData),
 	}
 
 	messageBytes, _ := json.Marshal(message)
 
+	fmt.Printf("Type of messageBytes %T\n", messageBytes)
+
 	mu.Lock()
 	for client := range roomsConnections[roomCode] {
-		if err := client.WriteMessage(websocket.BinaryMessage, messageBytes); err != nil {
+		fmt.Println("Sending mimeType:", mimeType)
+		if err := client.WriteMessage(websocket.TextMessage, messageBytes); err != nil {
 			fmt.Println("WriteMessage message:", err)
 		}
 	}
