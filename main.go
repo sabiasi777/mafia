@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -227,39 +227,46 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAudio(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Room-Code, Content-Type, X-Mime-Type")
+
+	if r.Method == "OPTIONS" {
+		return
+	}
+
 	roomCode := r.Header.Get("Room-Code")
+	mimeType := r.Header.Get("X-Mime-Type")
 
 	fmt.Println("roomCode in handleAudio:", roomCode)
+	fmt.Println("mimeType:", mimeType)
 
-	var msg AudioMessage
-	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-		fmt.Println("Invalid JSON:", err)
-		return
-	}
-
-	fmt.Println("audimsg:", msg)
-
-	audioData, err := base64.StdEncoding.DecodeString(msg.Audio)
+	audioData, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println("Base64 decode error:", err)
+		fmt.Println("Error reading audio data:", err)
+		http.Error(w, "Error reading audio data", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Println("audioData:", audioData)
+	message := struct {
+		MimeType string `json:"mimeType"`
+		Audio    []byte `json:"audio"`
+	}{
+		MimeType: mimeType,
+		Audio:    audioData,
+	}
 
-	//	outgoing, _ := json.Marshal(struct {
-	//		MimeType string `json:"mimeType"`
-	//		Audio    []byte `json:"audio"`
-	//	}{
-	//		MimeType: msg.MimeType,
-	//		Audio:    audioData,
-	//	})
+	messageBytes, _ := json.Marshal(message)
 
+	mu.Lock()
 	for client := range roomsConnections[roomCode] {
-		if err := client.WriteMessage(websocket.BinaryMessage, audioData); err != nil {
+		if err := client.WriteMessage(websocket.BinaryMessage, messageBytes); err != nil {
 			fmt.Println("WriteMessage message:", err)
 		}
 	}
+	mu.Unlock()
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func main() {
