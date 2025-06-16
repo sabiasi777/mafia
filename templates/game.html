@@ -80,8 +80,43 @@
         var ws
         var stream
         var mediaRecorder
-        var chunks = []
+
         var micMode = false
+        var isRecording = false
+
+        async function startRecording() {
+            if (!stream || !mediaRecorder) {
+                await setupAudio()
+            }
+
+            if (!isRecording && mediaRecorder && mediaRecorder.state === "inactive") {
+                mediaRecorder.start()
+                isRecording = true
+                console.log("Recording started")
+
+                microphoneButton.className = "mic-button unmuted"
+                microphoneButton.textContent = "🎙️"
+            }
+        }
+
+        function stopRecording() {
+            if (isRecording && mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop()
+                isRecording = false
+                console.log("Recording stopped")
+
+                microphoneButton.className = "mic-button muted"
+                microphoneButton.textContent = "🔇"
+            }
+        }
+
+        function toggleRecording() {
+            if (!isRecording) {
+                startRecording()
+            } else {
+                stopRecording()
+            }
+        }
 
         function checkPlayerCount() {
             const playerCount = playerList.querySelectorAll("li").length
@@ -168,17 +203,7 @@
             }
         })
 
-        microphoneButton.addEventListener("click", sendAudio)
-
-        function base64ToUint8Array(base64) {
-            const binaryString = atob(base64)
-            const len = binaryString.length
-            const bytes = new Uint8Array(len)
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i)
-            }
-            return bytes
-        }
+        microphoneButton.addEventListener("click", toggleRecording)
 
         function connect() {
             ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
@@ -191,11 +216,18 @@
                 const parsed = JSON.parse(event.data)
 
                 console.log("type of data:", typeof event.data)
+                console.log("type of parsed:", typeof parsed)
+                console.log("type of parsed.audio", typeof parsed.audio)
 
                 if (parsed.mimeType && parsed.audio) {
-                    const audioBytes = base64ToUint8Array(parsed.audio)
-                    const audioBlob = new Blob([audioBytes], { type: parsed.mimeType })
+                    console.log("Audio received")
+
+                    const response = await fetch(`data:${parsed.mimeType};base64,${parsed.audio}`);
+                    const audioBlob = await response.blob();
                     const audioURL = URL.createObjectURL(audioBlob)
+
+                    console.log("Blob size:", audioBlob.size, "bytes");
+                    console.log("Blob type:", audioBlob.type);
 
                     const audio = new Audio(audioURL)
     
@@ -235,18 +267,15 @@
             }
         }
 
-        async function sendAudio() {
+        async function setupAudio() {
             if (!stream) {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-            }
-
+                }
             if (!mediaRecorder) {
                 mediaRecorder = new MediaRecorder(stream)
-
+    
                 mediaRecorder.ondataavailable = async (e) => {
-                    if (e.data.size > 0) {
-                        chunks.push(e.data)
-
+                    if (e.data.size > 1000) {
                         fetch("http://localhost:8080/audio", {
                             method: "POST",
                             headers: {
@@ -259,34 +288,9 @@
                         .catch(err => console.error(err))
                     }
                 }
-
-                mediaRecorder.onstop = () => {
-                    chunks = []
-                }
-            }
-
-            toggleMicrophone()
-
-            if(micMode) {
-                mediaRecorder.start(100)
-            } else {
-                mediaRecorder.stop()
             }
         }
 
-        function toggleMicrophone() {
-            micMode = !micMode;
-            
-            if (micMode) {
-                microphoneButton.className = 'mic-button unmuted';
-                microphoneButton.textContent = '🎙️';
-            } else {
-                microphoneButton.className = 'mic-button muted';
-                microphoneButton.textContent = '🔇';
-            }
-        }
-
-        // Add subtle floating animation to the card
         const gameCard = document.querySelector('.game-card');
         let floatDirection = 1;
         
