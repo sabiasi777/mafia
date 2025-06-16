@@ -84,37 +84,23 @@
         var micMode = false
         var isRecording = false
 
-        async function startRecording() {
+        async function toggleMicrophone() {
             if (!stream || !mediaRecorder) {
                 await setupAudio()
             }
 
-            if (!isRecording && mediaRecorder && mediaRecorder.state === "inactive") {
-                mediaRecorder.start()
-                isRecording = true
-                console.log("Recording started")
+            micMode = !micMode
 
+            if (micMode) {
+                mediaRecorder.start(1000)
                 microphoneButton.className = "mic-button unmuted"
                 microphoneButton.textContent = "🎙️"
-            }
-        }
-
-        function stopRecording() {
-            if (isRecording && mediaRecorder && mediaRecorder.state === "recording") {
+                console.log("Live streaming started")
+            } else {
                 mediaRecorder.stop()
-                isRecording = false
-                console.log("Recording stopped")
-
                 microphoneButton.className = "mic-button muted"
                 microphoneButton.textContent = "🔇"
-            }
-        }
-
-        function toggleRecording() {
-            if (!isRecording) {
-                startRecording()
-            } else {
-                stopRecording()
+                console.log("Live streaming stopped")
             }
         }
 
@@ -203,7 +189,7 @@
             }
         })
 
-        microphoneButton.addEventListener("click", toggleRecording)
+        microphoneButton.addEventListener("click", toggleMicrophone)
 
         function connect() {
             ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
@@ -220,24 +206,25 @@
                 console.log("type of parsed.audio", typeof parsed.audio)
 
                 if (parsed.mimeType && parsed.audio) {
-                    console.log("Audio received")
+                    try {
+                        const response = await fetch(`data:${parsed.mimeType};base64,${parsed.audio}`);
+                        const audioBlob = await response.blob();
 
-                    const response = await fetch(`data:${parsed.mimeType};base64,${parsed.audio}`);
-                    const audioBlob = await response.blob();
-                    const audioURL = URL.createObjectURL(audioBlob)
+                        if (audioBlob.size > 1000) {
+                            const audioURL = URL.createObjectURL(audioBlob)
+                            const audio = new Audio(audioURL)
 
-                    console.log("Blob size:", audioBlob.size, "bytes");
-                    console.log("Blob type:", audioBlob.type);
+                            audio.play().catch(err => {
+                                console.log("Skipped unplayable chunk:", audioBlob.size, "bytes")
+                                URL.revokeObjectURL(audioURL)
+                            })
 
-                    const audio = new Audio(audioURL)
-    
-                    audio.play().catch(err => {
-                        console.error("Audio playback failed:", err)
-                        URL.revokeObjectURL(audioURL);
-                    })
-
-                    audio.onended = () => {
-                        URL.revokeObjectURL(audioURL)
+                            audio.onended = () => {
+                                URL.revokeObjectURL(audioURL)
+                            }
+                        }
+                    } catch (err) {
+                        console.log("Chunk processing failed:", err)
                     }
                 }
                 else {
