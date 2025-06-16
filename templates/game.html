@@ -82,7 +82,9 @@
         var mediaRecorder
 
         var micMode = false
-        var isRecording = false
+        var isPlaying = false
+
+        var audioQueue = []
 
         async function toggleMicrophone() {
             if (!stream || !mediaRecorder) {
@@ -201,30 +203,16 @@
             ws.onmessage = async function(event) {
                 const parsed = JSON.parse(event.data)
 
-                console.log("type of data:", typeof event.data)
-                console.log("type of parsed:", typeof parsed)
-                console.log("type of parsed.audio", typeof parsed.audio)
-
                 if (parsed.mimeType && parsed.audio) {
-                    try {
-                        const response = await fetch(`data:${parsed.mimeType};base64,${parsed.audio}`);
-                        const audioBlob = await response.blob();
+                    audioQueue.push({
+                        mimeType: parsed.mimeType,
+                        audio: parsed.audio
+                    })
 
-                        if (audioBlob.size > 1000) {
-                            const audioURL = URL.createObjectURL(audioBlob)
-                            const audio = new Audio(audioURL)
+                    console.log("Chunk added to queue, queue lenght:", audioQueue.length)
 
-                            audio.play().catch(err => {
-                                console.log("Skipped unplayable chunk:", audioBlob.size, "bytes")
-                                URL.revokeObjectURL(audioURL)
-                            })
-
-                            audio.onended = () => {
-                                URL.revokeObjectURL(audioURL)
-                            }
-                        }
-                    } catch (err) {
-                        console.log("Chunk processing failed:", err)
+                    if (!isPlaying) {
+                        processAudioQueue()
                     }
                 }
                 else {
@@ -251,6 +239,51 @@
 
             ws.onerror = function(error) {
                 console.error("WebSocket error:", error)
+            }
+        }
+
+        async function processAudioQueue() {
+            if (audioQueue.length === 0) {
+                isPlaying = false
+                return
+            }
+
+            isPlaying = true
+
+            const chunk = audioQueue.shift()
+
+            try {
+                const response = await fetch(`data:${chunk.mimeType};base64,${chunk.audio}`);
+                const audioBlob = await response.blob()
+
+                console.log("Playing chunk:", audioBlob.size, "bytes")
+
+                const audioURL = URL.createObjectURL(audioBlob)
+                const audio = new Audio(audioURL)
+
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioURL)
+
+                    setTimeout(() => {
+                        processAudioQueue()
+                    }, 10);
+                }
+
+                audio.onerror = () => {
+                    console.log("Audio error, trying next chunk")
+                    URL.revokeObjectURL(audioURL)
+                    setTimeout(() => {
+                        processAudioQueue()
+                    }, 10);
+                }
+
+                await audio.play()
+            } catch (err) {
+                console.log("Chunk processing failed:", err)
+
+                setTimeout(() => {
+                    processAudioQueue()
+                }, 10);
             }
         }
 
