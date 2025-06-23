@@ -260,6 +260,7 @@ func handleAudio(w http.ResponseWriter, r *http.Request) {
 	messageBytes, _ := json.Marshal(message)
 
 	fmt.Printf("Type of messageBytes %T\n", messageBytes)
+	fmt.Println("AUDIO:", message.Audio)
 
 	mu.Lock()
 	for client := range roomsConnections[roomCode] {

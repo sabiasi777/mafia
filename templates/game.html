@@ -82,9 +82,10 @@
         var mediaRecorder
 
         var micMode = false
-        var isPlaying = false
-
         var audioQueue = []
+        var audioContext
+        var scriptProcessor
+        var isPlaying = false
 
         async function toggleMicrophone() {
             if (!stream || !mediaRecorder) {
@@ -95,14 +96,14 @@
 
             if (micMode) {
                 mediaRecorder.start(1000)
+                console.log("Live streaming started")
                 microphoneButton.className = "mic-button unmuted"
                 microphoneButton.textContent = "🎙️"
-                console.log("Live streaming started")
             } else {
                 mediaRecorder.stop()
+                console.log("Live streaming stopped")
                 microphoneButton.className = "mic-button muted"
                 microphoneButton.textContent = "🔇"
-                console.log("Live streaming stopped")
             }
         }
 
@@ -204,16 +205,33 @@
                 const parsed = JSON.parse(event.data)
 
                 if (parsed.mimeType && parsed.audio) {
-                    audioQueue.push({
-                        mimeType: parsed.mimeType,
-                        audio: parsed.audio
-                    })
+                    console.log(`Received audio chunk. Type: ${parsed.mimeType}. Length: ${parsed.audio.length}`)
 
-                    console.log("Chunk added to queue, queue lenght:", audioQueue.length)
-
-                    if (!isPlaying) {
-                        processAudioQueue()
+                    var audioBlob
+                    if(typeof parsed.auido === "string" && parsed.audio.startsWith("data:")) {
+                        const parts = parsed.audio.split(",")
+                        const mimeType = parts[0].match(/:(.*?);/)[1]
+                        const base64 = parts[1]
+                        const binaryString = atob(base64)
+                        const len = binaryString.length
+                        const bytes = new Uint8Array(len)
+                        for (var i = 0; i < len; i++) {
+                            bytes[i] = binaryString.charCodeAt(i)
+                        }
+                        audioBlob = new Blob([bytes.buffer], { type: mimeType })
                     }
+                } else if (typeof parsed.audio === "string") {
+                    const binaryString = atob(parsed.audio)
+                    const len = binaryString.length
+                    const bytes = new Uint8Array(len)
+                    for (var i = 0; i < len; i++) {
+                        bytes[i] = binaryString.charCodeAt(i)
+                    }
+                    audioBlob = new Blob([bytes.buffer], { type: parsed.mimeType })
+                } else if (parsed.audio instanceof ArrayBuffer || parsed.audio instanceof Uint8Array) {
+                    audioBlob = new Blob([parsed.audio], { type: parsed.mimeType }) 
+                } else if (parsed.audio instanceof Blob) {
+                    audioBlob = parsed.audio
                 }
                 else {
                     console.log("TEXT MESSAGE!")
@@ -230,6 +248,16 @@
                     messageDisplay.appendChild(messageElement)
                     messageDisplay.scrollTop = messageDisplay.scrollHeight
                 }
+
+                audioQueue.push(audioBlob)
+
+                if (!isPlaying && audioQueue.length > 0) {
+                    isPlaying = true
+                    
+                    if (audioContext.state === "suspended") {
+                        await audioContext.resume()
+                    }
+                }
             }
 
             ws.onclose = function() {
@@ -242,48 +270,28 @@
             }
         }
 
-        async function processAudioQueue() {
-            if (audioQueue.length === 0) {
-                isPlaying = false
-                return
+        function startPlayback() {
+            if (audioContext && audioContext.state === "suspended") {
+                audioContext.resume().then(() => {
+                    console.log("AudioContext resumed. Playback started")
+                    isPlaying = true
+                })
+            } else if (audioContext && audioContext.state === "running") {
+                isPlaying = true
+                console.log("AudioContext already running. Playback active")
+            } else {
+                console.log("AudioContext not initialized or in an unexpected state.")
             }
+        }
 
-            isPlaying = true
+        function stopPlayback() {
+            isPlaying = false
+            audioQueue = []
 
-            const chunk = audioQueue.shift()
-
-            try {
-                const response = await fetch(`data:${chunk.mimeType};base64,${chunk.audio}`);
-                const audioBlob = await response.blob()
-
-                console.log("Playing chunk:", audioBlob.size, "bytes")
-
-                const audioURL = URL.createObjectURL(audioBlob)
-                const audio = new Audio(audioURL)
-
-                audio.onended = () => {
-                    URL.revokeObjectURL(audioURL)
-
-                    setTimeout(() => {
-                        processAudioQueue()
-                    }, 10);
-                }
-
-                audio.onerror = () => {
-                    console.log("Audio error, trying next chunk")
-                    URL.revokeObjectURL(audioURL)
-                    setTimeout(() => {
-                        processAudioQueue()
-                    }, 10);
-                }
-
-                await audio.play()
-            } catch (err) {
-                console.log("Chunk processing failed:", err)
-
-                setTimeout(() => {
-                    processAudioQueue()
-                }, 10);
+            if (audioContext && audioContext.state === "running") {
+                audioContext.suspend().then(() => {
+                    console.log("AudioContext suspended. Playback stopped")
+                })
             }
         }
 
@@ -295,7 +303,7 @@
                 mediaRecorder = new MediaRecorder(stream)
     
                 mediaRecorder.ondataavailable = async (e) => {
-                    if (e.data.size > 1000) {
+                    if (e.data.size > 0) {
                         fetch("http://localhost:8080/audio", {
                             method: "POST",
                             headers: {
@@ -305,9 +313,37 @@
                             },
                             body: e.data
                         })
-                        .catch(err => console.error(err))
+                        .catch(err => console.error("Error sending audio chunk:", err))
                     }
                 }
+            }
+
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)()
+
+                scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                scriptProcessor.connect(audioContext.destination);
+
+                scriptProcessor.onaudioprocess = async (event) => {
+                    if (audioQueue.length > 0 && audioContext.state === 'running') {
+                        const audioBlob = audioQueue.shift();
+
+                        try {
+                            const arrayBuffer = await audioBlob.arrayBuffer();
+                            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                            const source = audioContext.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(audioContext.destination);
+                            source.start(0);
+                        } catch (e) {
+                            console.error("Error decoding or playing audio chunk:", e);
+                        }
+                    } else if (audioQueue.length === 0 && isPlaying) {
+                        // If queue is empty and was playing, we might have a gap.
+                        // Consider pausing or stopping playback here if silence is desired.
+                    }
+                };
             }
         }
 
