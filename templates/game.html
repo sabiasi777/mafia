@@ -67,7 +67,14 @@
     </div>
 
 <script>
-        // ... (your existing variable declarations) ...
+        const startButton = document.getElementById("startButton")
+        const playerList = document.getElementById("playerList")
+        const roleContainer = document.getElementById('roleContainer');
+        const roleText = document.getElementById('roleText');
+        const gameArea = document.getElementById('gameArea');
+        const gameScreen = document.getElementById('gameScreen');
+        const sendButton = document.getElementById("sendButton")
+        const microphoneButton = document.getElementById("microphoneButton")
 
         var roomCode
         var ws
@@ -77,50 +84,10 @@
         var micMode = false
         var audioQueue = []
         var audioContext
-        // var scriptProcessor; // Remove scriptProcessor, it's not needed for this approach anymore
         var isPlaying = false
         var nextPlaybackTime = 0
         var audioChunks
-
-        async function toggleMicrophone() {
-            if (!stream || !mediaRecorder) {
-                await setupAudio()
-            }
-
-            micMode = !micMode
-
-            if (micMode) {
-                mediaRecorder.start(1000)
-                console.log("Live streaming started")
-                microphoneButton.className = "mic-button unmuted"
-                microphoneButton.textContent = "🎙️"
-            } else {
-                mediaRecorder.stop()
-                console.log("Live streaming stopped")
-                microphoneButton.className = "mic-button muted"
-                microphoneButton.textContent = "🔇"
-            }
-        }
-
-        function checkPlayerCount() {
-            const playerCount = playerList.querySelectorAll("li").length
-            const countElement = document.querySelector('.player-count');
-            if (countElement) {
-                countElement.textContent = playerCount;
-            }
-            startButton.disabled = playerCount < 4
-            
-            if (playerCount >= 4) {
-                startButton.innerHTML = '🎮 Start Game';
-            } else {
-                startButton.innerHTML = `🎮 Need ${4 - playerCount} more players`;
-            }
-        }
-
-        checkPlayerCount()
-
-        const observer = new MutationObserver(checkPlayerCount)
-        observer.observe(playerList, { childList: true })
+        var audioChunksForLocalTest = []
 
         startButton.addEventListener('click', () => {
             roomCode = window.location.pathname.split("/").pop()
@@ -146,26 +113,6 @@
             .catch(err => console.error(err))
         })
 
-        function getCurrentUserNameFromURL() {
-            const params = new URLSearchParams(window.location.search)
-            return params.get("user")
-        }
-
-        function startGameUI(me) {
-            document.getElementById("gameInfo").style.display = "none"
-            document.getElementById("statusBar").style.display = "none"
-            document.getElementsByTagName("header")[0].style.display = "none"
-            startButton.style.display = "none"
-
-            roleText.textContent = `Your role: ${me.role}`
-            roleContainer.style.display = "flex"
-
-            setTimeout(() => {
-                roleContainer.style.display = "none"
-                gameArea.style.display = "block"
-            }, 3000)
-        }
-
         sendButton.addEventListener("click", () => {
             const input = document.getElementById("messageInput")
             if (input.value.trim()) {
@@ -189,93 +136,92 @@
 
         microphoneButton.addEventListener("click", toggleMicrophone)
 
+        function checkPlayerCount() {
+            const playerCount = playerList.querySelectorAll("li").length
+            const countElement = document.querySelector('.player-count');
+            if (countElement) {
+                countElement.textContent = playerCount;
+            }
+            startButton.disabled = playerCount < 4
+            
+            if (playerCount >= 4) {
+                startButton.innerHTML = '🎮 Start Game';
+            } else {
+                startButton.innerHTML = `🎮 Need ${4 - playerCount} more players`;
+            }
+        }
+
+        checkPlayerCount()
+
+        const observer = new MutationObserver(checkPlayerCount)
+        observer.observe(playerList, { childList: true })
+
+        function getCurrentUserNameFromURL() {
+            const params = new URLSearchParams(window.location.search)
+            return params.get("user")
+        }
+
+        function startGameUI(me) {
+            document.getElementById("gameInfo").style.display = "none"
+            document.getElementById("statusBar").style.display = "none"
+            document.getElementsByTagName("header")[0].style.display = "none"
+            startButton.style.display = "none"
+
+            roleText.textContent = `Your role: ${me.role}`
+            roleContainer.style.display = "flex"
+
+            setTimeout(() => {
+                roleContainer.style.display = "none"
+                gameArea.style.display = "block"
+            }, 3000)
+        }
+
+        async function toggleMicrophone() {
+            if (!stream || !mediaRecorder) {
+                await setupAudio()
+            }
+
+            micMode = !micMode
+
+            if (micMode) {
+                mediaRecorder.start(1000)
+                console.log("Live streaming started")
+                microphoneButton.className = "mic-button unmuted"
+                microphoneButton.textContent = "🎙️"
+            } else {
+                mediaRecorder.stop()
+                console.log("Live streaming stopped")
+                microphoneButton.className = "mic-button muted"
+                microphoneButton.textContent = "🔇"
+            }
+        }
+
         function connect() {
             ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
+            ws.binaryType = "arraybuffer"
 
             ws.onopen = function() {
                 console.log("Connected to WebSocket server")
             }
 
             ws.onmessage = async function(event) {
-                const parsed = JSON.parse(event.data)
+                // Removed the indication of audio message. Starting clean
+                if (!event.data) {
 
-                if (parsed.mimeType && parsed.audio) {
-                    console.log(`Received audio chunk. Parsed MIME Type: ${parsed.mimeType}. Length: ${parsed.audio.length}`)
-
-                    var audioBlob
-                    try {
-                        if(typeof parsed.audio === "string") {
-                            if (parsed.audio.startsWith("data:")) {
-                                var base64String = parsed.audio
-                                if (parsed.audio.startsWith("data:")) {
-                                    const parts = parsed.audio.split(",")
-                                    base64String = parts[1]
-                                }
-                                const binary_string = window.atob(base64String);
-                                const len = binary_string.length;
-                                const bytes = new Uint8Array(len);
-                                for (let i = 0; i < len; i++) {
-                                    bytes[i] = binary_string.charCodeAt(i);
-                                }
-                                audioBlob = new Blob([bytes], { type: parsed.mimeType });
-                            }
-                        } else if (parsed.audio instanceof ArrayBuffer || parsed.audio instanceof Uint8Array) {
-                            audioBlob = new Blob([parsed.audio], { type: parsed.mimeType })
-                        } else if (parsed.audio instanceof Blob) {
-                            audioBlob = parsed.audio
-                        } else {
-                            console.error("Unknown audio data format received in 'audio' field:", typeof parsed.audio, parsed.audio)
-                            audioBlob = undefined
-                        }
-                    } catch (err) {
-                        console.error("Error processing incoming audio data:", err)
-                        audioBlob = undefined
-                    }
-                }
-
-                if (audioBlob) {
-                    audioQueue.push(audioBlob)
-                    // console.log("Audio Blob added to queue. Queue length:", audioQueue.length) // Keep for debugging
-
-                    // Resume AudioContext and start playback process if needed
-                    if (audioContext.state === "suspended") {
-                        try {
-                            await audioContext.resume()
-                            console.log("AudioContext resumed by incoming audio chunk.")
-                            isPlaying = true
-                            processAudioQueue() // Try to play if chunks are available
-                        } catch (err) {
-                            console.error("Failed to resume AudioContext on chunk arrival:", err)
-                            isPlaying = false // Don't try to play if resume failed
-                        }
-                    } else if (audioContext.state === "running" && !isPlaying) {
-                        // Context running, but playback not active yet (e.g., first chunk after a pause)
-                        isPlaying = true
-                        processAudioQueue()
-                    } else if (audioContext.state === "running" && isPlaying) {
-                        // Context running, playback active, just schedule the new chunk
-                        processAudioQueue()
-                    }
-                }
-                else { // This is where text messages (or other non-audio messages) are handled
-                    if (parsed.type === "text") { // Add a check for message type
-                        console.log("TEXT MESSAGE!")
-                        // The 'parsed' object is already JSON, so no need to re-parse it
-                        const messageDisplay = document.getElementById("messages")
-                        const messageElement = document.createElement("div")
-                        messageElement.className = "message"
-                        messageElement.innerHTML = `
-                            <div class="message-sender">${parsed.sender}</div>
-                            <div class="message-content">${parsed.content}</div>
-                            <div class="message-time">${parsed.timestamp}</div>
-                        `
-
-                        messageDisplay.appendChild(messageElement)
-                        messageDisplay.scrollTop = messageDisplay.scrollHeight
-                    } else {
-                        // Handle other non-audio message types if any, or log unknown
-                        console.warn("Received unknown message type:", parsed);
-                    }
+                } else {
+                    console.log("TEXT MESSAGE!")
+                    const message = JSON.parse(event.data)
+                    const messageDisplay = document.getElementById("messages")
+                    const messageElement = document.createElement("div")
+                    messageElement.className = "message"
+                    messageElement.innerHTML = `
+                        <div class="message-sender">${message.sender}</div>
+                        <div class="message-content">${message.content}</div>
+                        <div class="message-time">${message.timestamp}</div>
+                    `
+                    
+                    messageDisplay.appendChild(messageElement)
+                    messageDisplay.scrollTop = messageDisplay.scrollHeight
                 }
             }
 
@@ -289,183 +235,30 @@
             }
         }
 
-        // Keep these playback functions as they are, they control the 'isPlaying' flag
-        // and trigger processAudioQueue
-        function startPlayback() {
-            if (audioContext && audioContext.state === "suspended") {
-            audioContext.resume().then(() => {
-                console.log("AudioContext resumed. Playback started.");
-                isPlaying = true;
-                processAudioQueue()
-            }).catch(err => console.error("Failed to resume AudioContext:", err));
-            } else if (audioContext && audioContext.state === "running") {
-                isPlaying = true;
-                processAudioQueue();
-                console.log("AudioContext already running. Playback active.");
-            } else {
-                console.log("AudioContext not initialized or in an unexpected state. Call setupAudio first.");
-            }
-        }
-
-        function stopPlayback() {
-            isPlaying = false
-            audioQueue = [] // Clear the queue on stop
-
-            if (audioContext && audioContext.state === "running") {
-                audioContext.suspend().then(() => {
-                    console.log("AudioContext suspended. Playback stopped")
-                }).catch(err => console.error("Failed to suspend AudioContext:", err))
-            }
-        }
-
         async function setupAudio() {
             if (!stream) {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true })
                 }
             if (!mediaRecorder) {
-                mediaRecorder = new MediaRecorder(stream)
+                mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" })
 
                 mediaRecorder.ondataavailable = async (e) => {
                     if (e.data.size > 0) {
                         console.log("Sending audio chunk with type:", e.data.type, "and size:", e.data.size)
-                        audioQueue.push(e.data)
-                        if (audioContext.state === "suspended") {
-                             try {
-                                await audioContext.resume();
-                                console.log("AudioContext resumed by local chunk.")
-                                isPlaying = true;
-                                processAudioQueue();
-                            } catch (err) {
-                                console.error("Failed to resume AudioContext locally:", err)
-                                isPlaying = false;
-                            }
-                        } else if (!isPlaying) {
-                            isPlaying = true;
-                            processAudioQueue();
-                        } else {
-                            processAudioQueue();
-                        }
-                        // fetch("http://localhost:8080/audio", {
-                        //     method: "POST",
-                        //     headers: {
-                        //         "Room-Code": roomCode,
-                        //         "Content-Type": e.data.type,
-                        //         'X-Mime-Type': e.data.type
-                        //     },
-                        //     body: e.data
-                        // })
-                        // .catch(err => console.error("Error sending audio chunk:", err))
+                        fetch("http://localhost:8080/audio", {
+                            method: "POST",
+                            headers: {
+                                "Room-Code": roomCode,
+                                "Content-Type": e.data.type,
+                                'X-Mime-Type': e.data.type
+                            },
+                            body: e.data
+                        })
+                        .catch(err => console.error("Error sending audio chunk:", err))
                     }
                 }
-
-                mediaRecorder.onstop = () => {
-                    console.log("Recording stopped. Total chunks:", audioChunks.length);
-                    const fullBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' })
-                    const url = URL.createObjectURL(fullBlob);
-                    const tempAudio = new Audio(url);
-                    tempAudio.controls = true;
-                    document.body.appendChild(tempAudio);
-                    tempAudio.play();
-                    console.log("Playing local recording for test.");
-                }
-            }
-
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)()
-                nextPlaybackTime = audioContext.currentTime
-
-                // Crucially: REMOVE SCRIPTPROCESSOR.ONAUDIOPROCESS LOGIC HERE
-                // The scriptProcessor itself is not needed for this scheduling approach.
-                // If you *really* want to keep it connected for some other reason (e.g., visualizers)
-                // then ensure it does NOT try to play audio chunks directly.
-                // For direct live playback via scheduling, you don't need scriptProcessor at all.
-                // If you keep scriptProcessor, it needs to be disconnected from destination
-                // or its onaudioprocess must do nothing with the audio blobs directly.
-
-                // Remove these lines entirely if you're not using scriptProcessor
-                // scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-                // scriptProcessor.connect(audioContext.destination); // This connection is the problem if you keep the onaudioprocess logic
-
-                // All the onaudioprocess logic here needs to be removed or commented out:
-                /*
-                scriptProcessor.onaudioprocess = async (event) => {
-                    console.log("onaudioprocess triggered. Current queue length:", audioQueue.length)
-                    if (audioQueue.length > 0 && audioContext.state === 'running') {
-                        const audioBlob = audioQueue.shift()
-                        console.log("Processing audioBlob. Remaining queue length:", audioQueue.length)
-                        if (!audioBlob) {
-                                    console.error("audioBlob is undefined after shift! This should not happen if queue length > 0.")
-                                    return;
-                                }
-                        try {
-                            const arrayBuffer = await audioBlob.arrayBuffer()
-                            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-
-                            const source = audioContext.createBufferSource()
-                            source.buffer = audioBuffer;
-                            source.connect(audioContext.destination)
-                            source.start(0); // <--- THIS IS THE PROBLEM LINE
-                        } catch (e) {
-                            console.error("Error decoding or playing audio chunk:", e)
-                        }
-                    } else if (audioQueue.length === 0 && isPlaying) {
-                        console.warn("Audio queue is empty. Waiting for new chunks...")
-                    }
-                };
-                */
             }
         }
-
-        async function processAudioQueue() {
-            if (!isPlaying || audioQueue.length === 0) {
-                return
-            }
-
-            // You might want to pre-buffer a bit. If queue length is low, wait for more.
-            // This 'while' loop is good for immediately scheduling multiple arrived chunks.
-            while (audioQueue.length > 0 && nextPlaybackTime < audioContext.currentTime + 0.5) { // Schedule up to 0.5 seconds ahead
-                const audioBlob = audioQueue.shift()
-
-                try {
-                    const arrayBuffer = await audioBlob.arrayBuffer()
-                    console.log("Attempting to decode ArrayBuffer with byteLength:", arrayBuffer.byteLength); // ADD THIS
-                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-
-
-                    const source = audioContext.createBufferSource()
-                    source.buffer = audioBuffer
-                    source.connect(audioContext.destination)
-
-                    // This is the core of scheduled playback
-                    source.start(nextPlaybackTime)
-
-                    // Advance the next playback time
-                    nextPlaybackTime += audioBuffer.duration
-
-                    // This onended is good for debug, but less critical for continuous stream if new chunks are arriving reliably
-                    source.onended = () => {
-                        // console.log("Chunk finished playing. Next playback time:", nextPlaybackTime);
-                        // If the queue runs totally dry, reset nextPlaybackTime to avoid trying to play in the past
-                        if (audioQueue.length === 0 && isPlaying) {
-                            nextPlaybackTime = audioContext.currentTime; // Reset to current time if we ran out
-                            console.warn("Playback buffer ran dry on onended. Resetting playback time.");
-                        }
-                        // Important: After a chunk ends, if more are in queue, *process them*
-                        // processAudioQueue(); // Calling this here ensures continuous attempt to fill buffer
-                    }
-
-                } catch (err) {
-                    console.error("Error decoding or playing audio chunk:", err)
-                    // If an error occurs, reset playback time to avoid accumulation of errors
-                    nextPlaybackTime = audioContext.currentTime
-                }
-            }
-            // If the loop finishes but isPlaying is true and queue is still not empty,
-            // this means we've scheduled enough ahead and will wait for new chunks to trigger more scheduling.
-            // If queue is empty, the `if (!isPlaying || audioQueue.length === 0)` will handle it.
-        }
-
-        // ... (your gameCard animation remains the same) ...
     </script>
 </body>
 </html>
