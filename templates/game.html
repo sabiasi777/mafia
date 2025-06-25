@@ -80,6 +80,7 @@
         // var scriptProcessor; // Remove scriptProcessor, it's not needed for this approach anymore
         var isPlaying = false
         var nextPlaybackTime = 0
+        var audioChunks
 
         async function toggleMicrophone() {
             if (!stream || !mediaRecorder) {
@@ -205,24 +206,18 @@
                     try {
                         if(typeof parsed.audio === "string") {
                             if (parsed.audio.startsWith("data:")) {
-                                const parts = parsed.audio.split(",")
-                                const mimeType = parts[0].match(/:(.*?);/)[1]
-                                const base64 = parts[1]
-                                const binaryString = atob(base64)
-                                const len = binaryString.length
-                                const bytes = new Uint8Array(len)
-                                for (var i = 0; i < len; i++) {
-                                    bytes[i] = binaryString.charCodeAt(i)
+                                var base64String = parsed.audio
+                                if (parsed.audio.startsWith("data:")) {
+                                    const parts = parsed.audio.split(",")
+                                    base64String = parts[1]
                                 }
-                                audioBlob = new Blob([bytes.buffer], { type: mimeType })
-                            } else {
-                                const binaryString = atob(parsed.audio)
-                                const len = binaryString.length
-                                const bytes = new Uint8Array(len)
-                                for (var i = 0; i < len; i++) {
-                                    bytes[i] = binaryString.charCodeAt(i)
+                                const binary_string = window.atob(base64String);
+                                const len = binary_string.length;
+                                const bytes = new Uint8Array(len);
+                                for (let i = 0; i < len; i++) {
+                                    bytes[i] = binary_string.charCodeAt(i);
                                 }
-                                audioBlob = new Blob([bytes.buffer], { type: parsed.mimeType })
+                                audioBlob = new Blob([bytes], { type: parsed.mimeType });
                             }
                         } else if (parsed.audio instanceof ArrayBuffer || parsed.audio instanceof Uint8Array) {
                             audioBlob = new Blob([parsed.audio], { type: parsed.mimeType })
@@ -332,17 +327,34 @@
 
                 mediaRecorder.ondataavailable = async (e) => {
                     if (e.data.size > 0) {
-                         console.log("Sending audio chunk with type:", e.data.type, "and size:", e.data.size)
-                        fetch("http://localhost:8080/audio", {
-                            method: "POST",
-                            headers: {
-                                "Room-Code": roomCode,
-                                "Content-Type": e.data.type,
-                                'X-Mime-Type': e.data.type
-                            },
-                            body: e.data
-                        })
-                        .catch(err => console.error("Error sending audio chunk:", err))
+                        console.log("Sending audio chunk with type:", e.data.type, "and size:", e.data.size)
+                        audioQueue.push(e.data)
+                        if (audioContext.state === "suspended") {
+                             try {
+                                await audioContext.resume();
+                                console.log("AudioContext resumed by local chunk.")
+                                isPlaying = true;
+                                processAudioQueue();
+                            } catch (err) {
+                                console.error("Failed to resume AudioContext locally:", err)
+                                isPlaying = false;
+                            }
+                        } else if (!isPlaying) {
+                            isPlaying = true;
+                            processAudioQueue();
+                        } else {
+                            processAudioQueue();
+                        }
+                        // fetch("http://localhost:8080/audio", {
+                        //     method: "POST",
+                        //     headers: {
+                        //         "Room-Code": roomCode,
+                        //         "Content-Type": e.data.type,
+                        //         'X-Mime-Type': e.data.type
+                        //     },
+                        //     body: e.data
+                        // })
+                        // .catch(err => console.error("Error sending audio chunk:", err))
                     }
                 }
 
