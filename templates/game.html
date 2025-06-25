@@ -87,7 +87,6 @@
         var isPlaying = false
         var nextPlaybackTime = 0
         var audioChunks
-        var audioChunksForLocalTest = []
 
         startButton.addEventListener('click', () => {
             roomCode = window.location.pathname.split("/").pop()
@@ -176,6 +175,93 @@
             }, 3000)
         }
 
+        // async function toggleMicrophone() {
+        //     if (!stream || !mediaRecorder) {
+        //         await setupAudio()
+        //     }
+
+        //     micMode = !micMode
+
+        //     if (micMode) {
+        //         mediaRecorder.start(1000)
+        //         console.log("Live streaming started")
+        //         microphoneButton.className = "mic-button unmuted"
+        //         microphoneButton.textContent = "🎙️"
+        //     } else {
+        //         mediaRecorder.stop()
+        //         console.log("Live streaming stopped")
+        //         microphoneButton.className = "mic-button muted"
+        //         microphoneButton.textContent = "🔇"
+        //     }
+        // }
+
+        // function connect() {
+        //     ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
+        //     // ws.binaryType = "arraybuffer"
+
+        //     ws.onopen = function() {
+        //         console.log("Connected to WebSocket server")
+        //     }
+
+        //     ws.onmessage = async function(event) {
+        //         const message = JSON.parse(event.data)
+        //         if (message.audio && message.mimeType) {
+        //             console.log("Audio message received")
+        //             const url = URL.createObjectURL(message.audio)
+        //             const audio = new Audio(url)
+
+        //             audio.play()
+        //         } else {
+        //             console.log("Text message received")
+        //             const messageDisplay = document.getElementById("messages")
+        //             const messageElement = document.createElement("div")
+        //             messageElement.className = "message"
+        //             messageElement.innerHTML = `
+        //                 <div class="message-sender">${message.sender}</div>
+        //                 <div class="message-content">${message.content}</div>
+        //                 <div class="message-time">${message.timestamp}</div>
+        //             `
+                    
+        //             messageDisplay.appendChild(messageElement)
+        //             messageDisplay.scrollTop = messageDisplay.scrollHeight
+        //         }
+        //     }
+
+        //     ws.onclose = function() {
+        //         console.log("WebSocket connection closed, retrying...")
+        //         setTimeout(connect, 1000)
+        //     }
+
+        //     ws.onerror = function(error) {
+        //         console.error("WebSocket error:", error)
+        //     }
+        // }
+
+        // async function setupAudio() {
+        //     if (!stream) {
+        //         stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        //         }
+        //     if (!mediaRecorder) {
+        //         mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" })
+
+        //         mediaRecorder.ondataavailable = async (e) => {
+        //             if (e.data.size > 0) {
+        //                 console.log("Sending audio chunk with type:", e.data.type, "and size:", e.data.size)
+        //                 fetch("http://localhost:8080/audio", {
+        //                     method: "POST",
+        //                     headers: {
+        //                         "Room-Code": roomCode,
+        //                         "Content-Type": e.data.type,
+        //                         'X-Mime-Type': e.data.type
+        //                     },
+        //                     body: e.data
+        //                 })
+        //                 .catch(err => console.error("Error sending audio chunk:", err))
+        //             }
+        //         }
+        //     }
+        // }
+
         async function toggleMicrophone() {
             if (!stream || !mediaRecorder) {
                 await setupAudio()
@@ -196,6 +282,11 @@
             }
         }
 
+        // ... (Your checkPlayerCount, startButton, etc., functions go here) ...
+        // I'm assuming you still have those. If you removed them,
+        // you'll need to re-add necessary DOM element declarations (startButton, playerList, etc.)
+        // and their event listeners, as well as `roomCode` handling.
+
         function connect() {
             ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}`)
             ws.binaryType = "arraybuffer"
@@ -205,12 +296,36 @@
             }
 
             ws.onmessage = async function(event) {
-                // Removed the indication of audio message. Starting clean
-                if (!event.data) {
 
-                } else {
-                    console.log("TEXT MESSAGE!")
+                if (event.data instanceof arrayBuffer) {
+                    console.log(`Received binary audio chunk. Length:${event.data.byteLength}`)
+
+                    const audioBlob = new Blob([event.data], { type: "audio/webm;codecs=opus" })
+
+                    audioQueue.push(audioBlob)
+                    console.log("Audio Blob added to queue. Queue length:", audioQueue.length)
+
+                    if (audioContext.state === "suspended") {
+                        try {
+                            await audioContext.resume()
+                            console.log("AudioContext resumed by incoming audio chunk.")
+                            isPlaying = true
+                            processAudioQueue()
+                        } catch (err) {
+                            console.error("Failed to resume AudioContext on chunk arrival:", err)
+                            isPlaying = false
+                        }
+                    } else if (audioContext.state === "running" && !isPlaying) {
+                        isPlaying = true
+                        processAudioQueue()
+                    } else if (audioContext.state === "running" & isPlaying) {
+                        processAudioQueue()
+                    } else {
+                        console.warn("Received unknown message type from websocket:", typeof event.data)
+                    }
+                } else if (typeof event.data === "string") {
                     const message = JSON.parse(event.data)
+                    console.log("Text message received:", message)
                     const messageDisplay = document.getElementById("messages")
                     const messageElement = document.createElement("div")
                     messageElement.className = "message"
@@ -219,7 +334,6 @@
                         <div class="message-content">${message.content}</div>
                         <div class="message-time">${message.timestamp}</div>
                     `
-                    
                     messageDisplay.appendChild(messageElement)
                     messageDisplay.scrollTop = messageDisplay.scrollHeight
                 }
@@ -238,7 +352,7 @@
         async function setupAudio() {
             if (!stream) {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-                }
+            }
             if (!mediaRecorder) {
                 mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" })
 
@@ -256,6 +370,46 @@
                         })
                         .catch(err => console.error("Error sending audio chunk:", err))
                     }
+                }
+            }
+            
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)()
+                nextPlaybackTime = audioContext.currentTime;
+            }
+        }
+        
+        async function processAudioQueue() {
+            if (!isPlaying || audioQueue.length === 0) {
+                return
+            }
+
+            while (audioQueue.length > 0 && nextPlaybackTime < audioContext.currentTime + 0.5) {
+                const audioBlob = audioQueue.shift()
+
+                try {
+                    const arrayBuffer = await audioBlob.arrayBuffer()
+                    console.log("Attempting to decode ArrayBuffer with byteLength:", arrayBuffer.byteLength);
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+
+                    const source = audioContext.createBufferSource()
+                    source.buffer = audioBuffer
+                    source.connect(audioContext.destination)
+
+                    source.start(nextPlaybackTime)
+
+                    nextPlaybackTime += audioBuffer.duration
+
+                    source.onended = () => {
+                        if (audioQueue.length === 0 && isPlaying) {
+                            nextPlaybackTime = audioContext.currentTime;
+                            console.warn("Playback buffer ran dry on onended. Resetting playback time.");
+                        }
+                    }
+
+                } catch (err) {
+                    console.error("Error decoding or playing audio chunk:", err)
+                    nextPlaybackTime = audioContext.currentTime // Reset on error to avoid compounding
                 }
             }
         }
