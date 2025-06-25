@@ -88,7 +88,7 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 func handleConnection(conn *websocket.Conn, roomCode string) {
 	for {
-		_, msg, err := conn.ReadMessage()
+		msgType, msg, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("Read error:", err)
 			break
@@ -96,8 +96,10 @@ func handleConnection(conn *websocket.Conn, roomCode string) {
 
 		mu.Lock()
 		for client := range roomsConnections[roomCode] {
-			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-				fmt.Println("Error writing message:", err)
+			if msgType == websocket.TextMessage {
+				if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+					fmt.Println("Error writing message:", err)
+				}
 			}
 		}
 		mu.Unlock()
@@ -248,7 +250,7 @@ func handleAudio(w http.ResponseWriter, r *http.Request) {
 
 	mu.Lock()
 	for client := range roomsConnections[roomCode] {
-		if err := client.WriteMessage(websocket.TextMessage, audioData); err != nil {
+		if err := client.WriteMessage(websocket.BinaryMessage, audioData); err != nil {
 			fmt.Println("WriteMessage message:", err)
 		}
 	}
