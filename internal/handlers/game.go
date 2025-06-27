@@ -14,6 +14,7 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 	var req models.StartRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -27,6 +28,8 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
+	rm.Rooms[roomCode].CurrentUser = req.CurrentUser
 
 	logic.AssignRoles(room)
 	fmt.Println("LETS SAY THE ROLE:")

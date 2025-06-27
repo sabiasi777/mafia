@@ -57,14 +57,58 @@
     </div>
 
     <div id="gameArea" class="game-area">
-        <div class="chat-container">
-            <div id="messages" class="messages"></div>
-            <div class="chat-input">
-                <input type="text" id="messageInput" class="message-input" placeholder="Type your message...">
-                <button id="sendButton" class="send-button">Send</button>
+        <div class="video-grid">
+            {{range .Players}}
+            <div class="video-container" data-player-name="{{.Name}}">
+                <video class="video-element" autoplay playsinline></video>
+                <div class="video-placeholder">
+                    <div class="avatar">{{index .Name 0}}</div>
+                    <div>{{.Name}}</div>
+                </div>
+                <div class="video-overlay">
+                    <span class="player-name">{{.Name}}</span>
+                    <div class="video-status">
+                        <div class="status-icon mic-off">🎤</div>
+                        <div class="status-icon camera-off">📷</div>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </div>
+
+        <div class="game-controls">
+            <button class="control-button mic-button muted" id="micButton">
+                🎤
+            </button>
+            <button class="control-button camera-button off" id="cameraButton">
+                📷
+            </button>
+            <!-- <button class="control-button screen-share" id="screenShareButton">
+                🖥️
+            </button>
+            <button class="control-button settings" id="settingsButton">
+                ⚙️
+            </button> -->
+        </div>
+
+        <div class="game-sidebar">
+            <div class="game-info-panel">
+                <h3>Game Status</h3>
+                <div class="game-phase">Night Phase</div>
+                <div class="timer">👨🏿(rasisti var)</div>
+            </div>
+
+
+            <div class="chat-container">
+                <div id="messages" class="messages"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" class="message-input" placeholder="Type your message...">
+                    <button id="sendButton" class="send-button">Send</button>
+                </div>
             </div>
         </div>
-        <button id="microphoneButton" class="mic-button muted">🔇</button>
+
+        <!-- <button id="microphoneButton" class="mic-button muted">🔇</button> -->
     </div>
 
     <audio id="liveAudioPlayer" autoplay></audio>

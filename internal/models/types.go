@@ -10,6 +10,7 @@ type Room struct {
 	Code        string
 	Players     []Player
 	ActiveRoles []string
+	CurrentUser string
 }
 
 type Page struct {
@@ -23,5 +24,6 @@ type AudioMessage struct {
 }
 
 type StartRequest struct {
-	RoomCode string `json:"roomCode"`
+	RoomCode    string `json:"roomCode"`
+	CurrentUser string `json:"currentUser"`
 }

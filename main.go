@@ -13,6 +13,8 @@ import (
 )
 
 func main() {
+	// BLABLABLA
+
 	manager := handlers.RoomManager{
 		Rooms: make(map[string]*models.Room),
 		Tmpl:  template.Must(template.ParseGlob("templates/*.html")),

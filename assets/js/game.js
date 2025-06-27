@@ -7,7 +7,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const gameArea = document.getElementById('gameArea');
     const gameScreen = document.getElementById('gameScreen');
     const sendButton = document.getElementById("sendButton")
-    const microphoneButton = document.getElementById("microphoneButton")
+    const microphoneButton = document.getElementById("micButton")
     
     var roomCode
     var ws
@@ -21,6 +21,7 @@ window.addEventListener("DOMContentLoaded", () => {
     var micMode = false
     var isMediaSourceOpen = false
     var isAppending = false
+    var currentUserName = getCurrentUserNameFromURL()
     
     startButton.addEventListener('click', () => {
         roomCode = window.location.pathname.split("/").pop()
@@ -29,7 +30,7 @@ window.addEventListener("DOMContentLoaded", () => {
             headers: {
                 'Content-Type': "application/json"
             },
-            body: JSON.stringify({ roomCode })
+            body: JSON.stringify({ roomCode, currentUserName })
         })
         .then(res => {
             if (!res.ok) throw new Error("Failed to start game")
@@ -37,8 +38,7 @@ window.addEventListener("DOMContentLoaded", () => {
         })
         .then(data => {
             connect()
-            const currentUser = getCurrentUserNameFromURL()
-            const me = data.find(p => p.name === currentUser)
+            const me = data.find(p => p.name === currentUserName)
             if (me) {
                 startGameUI(me)
             }
@@ -49,9 +49,8 @@ window.addEventListener("DOMContentLoaded", () => {
     sendButton.addEventListener("click", () => {
         const input = document.getElementById("messageInput")
         if (input.value.trim()) {
-            const currentUser = getCurrentUserNameFromURL()
             const messageData = {
-                sender: currentUser,
+                sender: currentUserName,
                 content: input.value.trim(),
                 timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
                 type: "text"
@@ -86,6 +85,7 @@ window.addEventListener("DOMContentLoaded", () => {
     checkPlayerCount()
     const observer = new MutationObserver(checkPlayerCount)
     observer.observe(playerList, { childList: true })
+
     function getCurrentUserNameFromURL() {
         const params = new URLSearchParams(window.location.search)
         return params.get("user")
@@ -100,7 +100,7 @@ window.addEventListener("DOMContentLoaded", () => {
         roleContainer.style.display = "flex"
         setTimeout(() => {
             roleContainer.style.display = "none"
-            gameArea.style.display = "block"
+            gameArea.style.display = "grid"
         }, 3000)
     }
     
@@ -112,13 +112,21 @@ window.addEventListener("DOMContentLoaded", () => {
         if (micMode) {
             mediaRecorder.start(10)
             console.log("Live streaming started")
-            microphoneButton.className = "mic-button unmuted"
+            microphoneButton.className = "control-button mic-button unmuted"
+            const playerContainer = document.querySelector(`.video-container[data-player-name="${currentUserName}"]`);
+            if (playerContainer) {
+                playerContainer.classList.add("speaking");
+            }
             microphoneButton.textContent = "🎙️"
             startMediaSourcePlayback();
         } else {
             mediaRecorder.stop()
             console.log("Live streaming stopped")
-            microphoneButton.className = "mic-button muted"
+            microphoneButton.className = "control-button mic-button muted"
+            const playerContainer = document.querySelector(`.video-container[data-player-name="${currentUserName}"]`);
+            if (playerContainer) {
+                playerContainer.classList.remove("speaking");
+            }
             microphoneButton.textContent = "🔇"
             stopMediaSourcePlayback();
         }

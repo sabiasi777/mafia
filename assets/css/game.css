@@ -3,7 +3,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
@@ -12,7 +11,6 @@
             position: relative;
             overflow-x: hidden;
         }
-
         /* Animated background elements */
         body::before {
             content: '';
@@ -28,7 +26,6 @@
             z-index: -1;
             pointer-events: none;
         }
-
         .home-link {
             position: fixed;
             top: 24px;
@@ -46,13 +43,11 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
-
         .home-link:hover {
             background: rgba(255, 255, 255, 0.15);
             border-color: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px) scale(1.05);
         }
-
         .container {
             min-height: 100vh;
             display: flex;
@@ -60,7 +55,6 @@
             justify-content: center;
             padding: 20px;
         }
-
         .game-card {
             background: rgba(30, 30, 50, 0.9);
             backdrop-filter: blur(20px);
@@ -76,14 +70,12 @@
             transform: translateY(0);
             transition: all 0.3s ease;
         }
-
         .game-card:hover {
             transform: translateY(-5px);
             box-shadow: 
                 0 35px 70px rgba(0, 0, 0, 0.7),
                 inset 0 1px 0 rgba(255, 255, 255, 0.15);
         }
-
         header h1 {
             font-size: 2.5rem;
             font-weight: 700;
@@ -96,18 +88,15 @@
             background-clip: text;
             animation: gradientShift 4s ease-in-out infinite;
         }
-
         @keyframes gradientShift {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
         }
-
         .game-info {
             display: grid;
             gap: 24px;
             margin-bottom: 32px;
         }
-
         .info-section {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -116,12 +105,10 @@
             position: relative;
             transition: all 0.3s ease;
         }
-
         .info-section:hover {
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.2);
         }
-
         .info-section h2 {
             font-size: 1.3rem;
             font-weight: 600;
@@ -131,7 +118,6 @@
             align-items: center;
             gap: 10px;
         }
-
         .info-section h2::before {
             content: '';
             width: 4px;
@@ -139,7 +125,6 @@
             background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
             border-radius: 2px;
         }
-
         .player-count {
             background: linear-gradient(135deg, #ff6b6b, #f093fb);
             color: white;
@@ -151,14 +136,12 @@
             text-align: center;
             box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
         }
-
         .player-list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 12px;
             list-style: none;
         }
-
         .player-item {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -169,12 +152,10 @@
             position: relative;
             overflow: hidden;
         }
-
         .player-item:hover {
             background: rgba(255, 255, 255, 0.08);
             transform: translateY(-2px);
         }
-
         .player-item.active {
             background: rgba(78, 205, 196, 0.15);
             border-color: #4ecdc4;
@@ -182,7 +163,6 @@
             font-weight: 500;
             box-shadow: 0 4px 15px rgba(78, 205, 196, 0.2);
         }
-
         .player-item.active::before {
             content: '';
             position: absolute;
@@ -192,14 +172,12 @@
             height: 100%;
             background: linear-gradient(135deg, #4ecdc4, #45b7d1);
         }
-
         .role-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             list-style: none;
         }
-
         .role-item {
             background: rgba(240, 147, 251, 0.15);
             border: 1px solid rgba(240, 147, 251, 0.3);
@@ -210,12 +188,10 @@
             font-weight: 500;
             transition: all 0.3s ease;
         }
-
         .role-item:hover {
             background: rgba(240, 147, 251, 0.25);
             transform: scale(1.05);
         }
-
         .warning {
             background: rgba(255, 193, 7, 0.15);
             border: 1px solid rgba(255, 193, 7, 0.3);
@@ -226,7 +202,6 @@
             font-weight: 500;
             font-size: 1.1rem;
         }
-
         .start-button {
             width: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -244,7 +219,6 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .start-button::before {
             content: '';
             position: absolute;
@@ -255,16 +229,13 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s;
         }
-
         .start-button:hover:not(:disabled)::before {
             left: 100%;
         }
-
         .start-button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
         }
-
         .start-button:disabled {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.5);
@@ -272,14 +243,12 @@
             transform: none;
             box-shadow: none;
         }
-
         .status-bar {
             text-align: center;
             font-size: 1rem;
             color: rgba(255, 255, 255, 0.7);
             font-weight: 500;
         }
-
         .role-reveal {
             position: fixed;
             top: 0;
@@ -293,7 +262,6 @@
             z-index: 1000;
             text-align: center;
         }
-
         .role-text {
             font-size: clamp(2rem, 6vw, 4rem);
             font-weight: 700;
@@ -304,12 +272,12 @@
             background-clip: text;
             animation: gradientShift 4s ease-in-out infinite, roleGlow 2s ease-in-out infinite alternate;
         }
-
         @keyframes roleGlow {
             0% { text-shadow: 0 0 20px rgba(255, 107, 107, 0.3); }
             100% { text-shadow: 0 0 40px rgba(255, 107, 107, 0.5), 0 0 60px rgba(78, 205, 196, 0.3); }
         }
-
+        
+        /* GAME AREA - NEW VIDEO-FOCUSED LAYOUT */
         .game-area {
             position: fixed;
             top: 0;
@@ -319,46 +287,268 @@
             background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
             display: none;
             z-index: 10;
+            padding: 20px;
+            grid-template-areas: 
+                "video-grid video-grid sidebar"
+                "controls controls sidebar";
+            grid-template-columns: 1fr 1fr 320px;
+            grid-template-rows: 1fr auto;
+            gap: 20px;
         }
-
+        
+        /* VIDEO GRID SECTION */
+        .video-grid {
+            grid-area: video-grid;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 20px;
+            overflow-y: auto;
+            border-radius: 20px;
+            background: rgba(30, 30, 50, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .video-container {
+            position: relative;
+            aspect-ratio: 16/9;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(20, 20, 35, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-container:hover {
+            border-color: rgba(78, 205, 196, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .video-container.speaking {
+            border-color: #4ecdc4;
+            box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2), 0 15px 40px rgba(0, 0, 0, 0.4);
+            animation: speakingPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes speakingPulse {
+            0%, 100% { transform: scale(1) translateY(-4px); }
+            50% { transform: scale(1.02) translateY(-6px); }
+        }
+        
+        .video-container.muted {
+            border-color: rgba(255, 107, 107, 0.5);
+        }
+        
+        .video-element {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+        
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .video-placeholder .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: white;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .player-name {
+            font-weight: 600;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .video-status {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+        
+        .status-icon.mic-on {
+            background: rgba(78, 205, 196, 0.8);
+            color: white;
+        }
+        
+        .status-icon.mic-off {
+            background: rgba(255, 107, 107, 0.8);
+            color: white;
+        }
+        
+        .status-icon.camera-off {
+            background: rgba(255, 193, 7, 0.8);
+            color: white;
+        }
+        
+        /* CONTROLS SECTION */
+        .game-controls {
+            grid-area: controls;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(30, 30, 50, 0.6);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-button {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .control-button:hover {
+            transform: translateY(-3px) scale(1.05);
+        }
+        
+        .control-button.mic-button.muted {
+            background: linear-gradient(135deg, #ff6b6b, #f5576c);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            color: white;
+        }
+        
+        .control-button.mic-button.unmuted {
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+            border: 2px solid rgba(78, 205, 196, 0.3);
+            color: white;
+            animation: micPulse 2s ease-in-out infinite;
+        }
+        
+        .control-button.camera-button.off {
+            background: linear-gradient(135deg, #ff6b6b, #f5576c);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            color: white;
+        }
+        
+        .control-button.camera-button.on {
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+            border: 2px solid rgba(78, 205, 196, 0.3);
+            color: white;
+        }
+        
+        .control-button.screen-share {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border: 2px solid rgba(240, 147, 251, 0.3);
+            color: white;
+        }
+        
+        .control-button.settings {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        
+        @keyframes micPulse {
+            0%, 100% {
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 0 15px rgba(78, 205, 196, 0.1);
+            }
+        }
+        
+        /* SIDEBAR SECTION */
+        .game-sidebar {
+            grid-area: sidebar;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
         .chat-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 420px;
-            max-width: calc(100vw - 48px);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
         }
-
+        
         .messages {
             background: rgba(30, 30, 50, 0.9);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px 16px 4px 16px;
             padding: 20px;
-            height: 340px;
+            flex: 1;
             overflow-y: auto;
             margin-bottom: 12px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
-
+        
         .messages::-webkit-scrollbar {
             width: 6px;
         }
-
+        
         .messages::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
         }
-
+        
         .messages::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.3);
             border-radius: 3px;
         }
-
+        
         .messages::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.5);
         }
-
+        
         .message {
             margin-bottom: 12px;
             padding: 12px 16px;
@@ -368,12 +558,12 @@
             border-image: linear-gradient(135deg, #ff6b6b, #4ecdc4) 1;
             transition: all 0.3s ease;
         }
-
+        
         .message:hover {
             background: rgba(255, 255, 255, 0.08);
             transform: translateY(-1px);
         }
-
+        
         .message-sender {
             font-weight: 600;
             background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
@@ -383,20 +573,20 @@
             font-size: 0.9rem;
             margin-bottom: 4px;
         }
-
+        
         .message-content {
             color: #ffffff;
             margin: 4px 0;
             line-height: 1.4;
             font-size: 0.9rem;
         }
-
+        
         .message-time {
             font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.5);
             margin-top: 4px;
         }
-
+        
         .chat-input {
             display: flex;
             gap: 12px;
@@ -405,9 +595,9 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             padding: 12px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
-
+        
         .message-input {
             flex: 1;
             background: rgba(255, 255, 255, 0.05);
@@ -419,17 +609,17 @@
             outline: none;
             transition: all 0.3s ease;
         }
-
+        
         .message-input:focus {
             border-color: #4ecdc4;
             background: rgba(255, 255, 255, 0.08);
             box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.1);
         }
-
+        
         .message-input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
-
+        
         .send-button {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
@@ -441,8 +631,11 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
+        
         .send-button::before {
             content: '';
             position: absolute;
@@ -453,108 +646,137 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s;
         }
-
+        
         .send-button:hover::before {
             left: 100%;
         }
-
+        
         .send-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(245, 87, 108, 0.4);
         }
-
-        .mic-button {
-            position: fixed;
-            bottom: 24px;
-            left: 24px;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            font-size: 1.5rem;
+        
+        /* GAME INFO PANEL */
+        .game-info-panel {
+            background: rgba(30, 30, 50, 0.9);
             backdrop-filter: blur(20px);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
-
-        .mic-button.muted {
-            background: linear-gradient(135deg, #ff6b6b, #f5576c);
-            border: 2px solid rgba(255, 107, 107, 0.3);
+        
+        .game-info-panel h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
-        .mic-button.unmuted {
-            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
-            border: 2px solid rgba(78, 205, 196, 0.3);
-            animation: micPulse 2s ease-in-out infinite;
+        
+        .game-phase {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            text-align: center;
+            font-weight: 500;
+            color: #4ecdc4;
         }
-
-        .mic-button:hover {
-            transform: translateY(-3px) scale(1.05);
+        
+        .timer {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            color: #ff6b6b;
+            margin-top: 8px;
         }
-
-        @keyframes micPulse {
-            0%, 100% {
-                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        
+        /* RESPONSIVE DESIGN */
+        @media (max-width: 1200px) {
+            .game-area {
+                grid-template-areas: 
+                    "video-grid"
+                    "controls"
+                    "sidebar";
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto 300px;
             }
-            50% {
-                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 0 15px rgba(78, 205, 196, 0.1);
+            
+            .video-grid {
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             }
         }
-
+        
         @media (max-width: 768px) {
             .game-card {
                 padding: 24px;
                 margin: 16px;
             }
-
+            
             header h1 {
                 font-size: 2rem;
             }
-
-            .chat-container {
-                width: calc(100vw - 48px);
-                right: 24px;
-                left: 24px;
+            
+            .game-area {
+                padding: 12px;
+                gap: 12px;
             }
-
-            .messages {
-                height: 240px;
+            
+            .video-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px;
+                padding: 12px;
             }
-
-            .mic-button {
+            
+            .control-button {
                 width: 56px;
                 height: 56px;
                 font-size: 1.3rem;
             }
-
+            
+            .game-controls {
+                gap: 12px;
+                padding: 16px;
+            }
+            
             .player-list {
                 grid-template-columns: 1fr;
             }
-
+            
             .info-section h2 {
                 font-size: 1.2rem;
             }
         }
-
+        
         @media (max-width: 480px) {
             .game-card {
                 padding: 20px;
                 margin: 10px;
             }
-
+            
             header h1 {
                 font-size: 1.8rem;
             }
-
+            
             .home-link {
                 top: 16px;
                 left: 16px;
                 padding: 10px 16px;
                 font-size: 13px;
+            }
+            
+            .video-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 8px;
+            }
+            
+            .control-button {
+                width: 48px;
+                height: 48px;
+                font-size: 1.1rem;
             }
         }
