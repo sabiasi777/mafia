@@ -42,7 +42,7 @@ func main() {
 	http.HandleFunc("/create", manager.CreateRoom)
 	http.HandleFunc("/start", manager.StartGame)
 	http.HandleFunc("/ws/chat", handlers.HandleChat)
-	http.HandleFunc("/audio", handlers.HandleAudio)
+	// http.HandleFunc("/audio", handlers.HandleAudio)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

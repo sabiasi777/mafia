@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/sabiasi777/mafia/internal/models"
 )
 
 var upgrader = websocket.Upgrader{
@@ -15,13 +17,15 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
-var roomsConnections = make(map[string]map[*websocket.Conn]bool)
+var roomsConnections = make(map[string]map[string]*websocket.Conn)
 var mu sync.Mutex
 
 func HandleChat(w http.ResponseWriter, r *http.Request) {
 	roomCode := r.URL.Query().Get("room")
-	if roomCode == "" {
-		http.Error(w, "Missing room code", http.StatusBadRequest)
+	userName := r.URL.Query().Get("user")
+
+	if roomCode == "" || userName == "" {
+		http.Error(w, "Missing room code or user name", http.StatusBadRequest)
 		return
 	}
 
@@ -33,39 +37,77 @@ func HandleChat(w http.ResponseWriter, r *http.Request) {
 
 	mu.Lock()
 	if roomsConnections[roomCode] == nil {
-		roomsConnections[roomCode] = make(map[*websocket.Conn]bool)
+		roomsConnections[roomCode] = make(map[string]*websocket.Conn)
 	}
-	roomsConnections[roomCode][conn] = true
+
+	for name, clientConn := range roomsConnections[roomCode] {
+		if name != userName {
+			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName}
+			payload, _ := json.Marshal(joinMsg)
+			clientConn.WriteMessage(websocket.TextMessage, payload)
+		}
+	}
+
+	roomsConnections[roomCode][userName] = conn
+	fmt.Printf("User '%s' joined room '%s'\n", userName, roomCode)
 	mu.Unlock()
 
 	defer func() {
 		mu.Lock()
-		if clients, exists := roomsConnections[roomCode]; exists {
-			delete(clients, conn)
-			if len(clients) == 0 {
+		if room, exists := roomsConnections[roomCode]; exists {
+			delete(room, userName)
+			if len(room) == 0 {
 				delete(roomsConnections, roomCode)
+				fmt.Printf("Room '%s' is now empty and closed.\n", roomCode)
 			}
 		}
 		mu.Unlock()
 		conn.Close()
+		fmt.Printf("Connection for user '%s' closed.\n", userName)
 	}()
 
-	handleConnection(conn, roomCode)
+	handleConnection(conn, roomCode, userName)
 }
 
-func handleConnection(conn *websocket.Conn, roomCode string) {
+func handleConnection(conn *websocket.Conn, roomCode string, senderName string) {
 	for {
-		msgType, msg, err := conn.ReadMessage()
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("Read error:", err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				fmt.Printf("Read error for user '%s': %v\n", senderName, err)
+			}
 			break
 		}
 
+		var message models.SignalingMessage
+		if err := json.Unmarshal(msg, &message); err != nil {
+			fmt.Println("Error unmarshaling message:", err)
+			continue
+		}
+
+		message.Sender = senderName
+
 		mu.Lock()
-		for client := range roomsConnections[roomCode] {
-			if msgType == websocket.TextMessage {
-				if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-					fmt.Println("Error writing message:", err)
+		room, ok := roomsConnections[roomCode]
+		if !ok {
+			mu.Unlock()
+			continue
+		}
+
+		if message.Receiver != "" {
+			if targetConn, ok := room[message.Receiver]; ok {
+				if err := targetConn.WriteMessage(websocket.TextMessage, msg); err != nil {
+					fmt.Printf("Error sending private message to %s: %v\n", message.Receiver, err)
+				}
+			} else {
+				fmt.Printf("Receiver %s not found in room %s\n", message.Receiver, roomCode)
+			}
+		} else {
+			for name, clientConn := range room {
+				if name != senderName && message.Type == "text" {
+					if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {
+						fmt.Println("Error broadcasting message:", err)
+					}
 				}
 			}
 		}

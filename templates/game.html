@@ -60,7 +60,7 @@
         <div class="video-grid">
             {{range .Players}}
             <div class="video-container" data-player-name="{{.Name}}">
-                <video class="video-element" autoplay playsinline></video>
+                <video class="video-element" playsinline autoplay muted></video>
                 <div class="video-placeholder">
                     <div class="avatar">{{index .Name 0}}</div>
                     <div>{{.Name}}</div>
@@ -95,7 +95,7 @@
             <div class="game-info-panel">
                 <h3>Game Status</h3>
                 <div class="game-phase">Night Phase</div>
-                <div class="timer">👨🏿(rasisti var)</div>
+                <div class="timer">00:00</div>
             </div>
 
 

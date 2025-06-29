@@ -1,5 +1,11 @@
 package models
 
+import (
+	"encoding/json"
+
+	"github.com/gorilla/websocket"
+)
+
 type Player struct {
 	Name     string `json:"name"`
 	Role     string `json:"role"`
@@ -26,4 +32,19 @@ type AudioMessage struct {
 type StartRequest struct {
 	RoomCode    string `json:"roomCode"`
 	CurrentUser string `json:"currentUser"`
+}
+
+type Client struct {
+	Conn     *websocket.Conn
+	UserName string
+}
+
+type SignalingMessage struct {
+	Type      string          `json:"type"`
+	Sender    string          `json:"sender"`
+	Receiver  string          `json:"receiver,omitempty"`
+	Content   string          `json:"content,omitempty"`
+	Sdp       json.RawMessage `json:"sdp,omitempty"`
+	Candidate json.RawMessage `json:"candidate,omitempty"`
+	Name      string          `json:"name,omitempty"`
 }
