@@ -23,17 +23,9 @@ window.addEventListener("DOMContentLoaded", () => {
     microphoneButton.disabled = true;
     
     var roomCode = window.location.pathname.split("/").pop()
+    console.log("roomCode after declaring the variable:", roomCode)
     var ws
     var localStream
-    var mediaRecorder
-    var mediaSource
-    var sourceBuffer
-    var mediaElement
-    
-    var incomingAudioQueue = []
-    var micMode = false
-    var isMediaSourceOpen = false
-    var isAppending = false
     var currentUserName = getCurrentUserNameFromURL()
 
     startButton.addEventListener('click', onStartButtonClick);
@@ -63,6 +55,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function onSendButtonClick() {
+        console.log("Send button")
         const input = document.getElementById("messageInput");
         if (input.value.trim() && ws) {
             const messageData = {
@@ -70,9 +63,11 @@ window.addEventListener("DOMContentLoaded", () => {
                 content: input.value.trim(),
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 type: "text"
-            };
-            ws.send(JSON.stringify(messageData));
-            input.value = "";
+            }
+            console.log("SENDING (text)")
+            ws.send(JSON.stringify(messageData))
+            input.value = ""
+            console.log("MESSAGE (text) has been sent")
         }
     }
 
@@ -90,28 +85,22 @@ window.addEventListener("DOMContentLoaded", () => {
             gameArea.style.display = "grid"
 
             const mediaReady = await setupLocalMedia()
+            
             if (mediaReady) {
                 cameraButton.disabled = false
                 microphoneButton.disabled = false
 
                 connectToSignalingServer();
             }
+
         }, 3000)
     }
 
     async function setupLocalMedia() {
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            console.log("Audio tracks:", localStream.getAudioTracks());
 
-            const videoContainer = document.querySelector(`.video-container[data-player-name="${currentUserName}"]`)
-            if (videoContainer) {
-                const video = videoContainer.querySelector("video.video-element")
-                const placeholder = videoContainer.querySelector(".video-placeholder")
-
-                placeholder.style.display = 'none'
-                video.srcObject = localStream
-                video.muted = true
-            }
             return true;
         } catch (err) {
             console.error("Error accessing media devices:", err)
@@ -129,9 +118,9 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     
         ws.onmessage = async function(event) {
+            console.log("onmessage")
+            console.log("⬇️ RECEIVED (raw):", event.data)
             const message = JSON.parse(event.data)
-
-            if (message.sender === currentUserName) return
 
             switch (message.type) {
                 case "text":
@@ -157,7 +146,7 @@ window.addEventListener("DOMContentLoaded", () => {
     
         ws.onclose = function() {
             console.log("WebSocket connection closed, retrying...")
-            setTimeout(connect, 1000)
+            setTimeout(connectToSignalingServer, 1000)
         }
     
         ws.onerror = function(error) {
@@ -165,7 +154,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function createPeerConnections(playerName) {
+    function createPeerConnection(playerName) {
         if (peerConnections[playerName]) return peerConnections[playerName]
 
         const pc = new RTCPeerConnection(configuration)
@@ -238,9 +227,12 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleMicrophone() {
+        console.log("microphone button")
         if (!localStream) return;
         const audioTrack = localStream.getAudioTracks()[0];
+        console.log("AUDIOTRACK:", audioTrack)
         if (audioTrack) {
+            console.log("AUDIO TRACK EXISTS")
             audioTrack.enabled = !audioTrack.enabled;
             microphoneButton.className = `control-button mic-button ${audioTrack.enabled ? 'unmuted' : 'muted'}`;
             microphoneButton.textContent = audioTrack.enabled ? "🎙️" : "🎤";
@@ -251,9 +243,20 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleCamera() {
-        if (!localStream) return;
+        if (!localStream) return
+
+        const videoContainer = document.querySelector(`.video-container[data-player-name="${currentUserName}"]`)
+        if (videoContainer) {
+            const video = videoContainer.querySelector("video.video-element")
+            const placeholder = videoContainer.querySelector(".video-placeholder")
+            placeholder.style.display = 'none'
+            video.srcObject = localStream
+            video.muted = true
+        }
+
         const videoTrack = localStream.getVideoTracks()[0];
         if (videoTrack) {
+            console.log("Video tracks")
             videoTrack.enabled = !videoTrack.enabled;
             const placeholder = document.querySelector(`.video-container[data-player-name="${currentUserName}"] .video-placeholder`);
             placeholder.style.display = videoTrack.enabled ? 'none' : 'flex';

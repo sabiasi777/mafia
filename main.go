@@ -13,8 +13,6 @@ import (
 )
 
 func main() {
-	// BLABLABLA
-
 	manager := handlers.RoomManager{
 		Rooms: make(map[string]*models.Room),
 		Tmpl:  template.Must(template.ParseGlob("templates/*.html")),
@@ -42,6 +40,7 @@ func main() {
 	http.HandleFunc("/create", manager.CreateRoom)
 	http.HandleFunc("/start", manager.StartGame)
 	http.HandleFunc("/ws/chat", handlers.HandleChat)
+
 	// http.HandleFunc("/audio", handlers.HandleAudio)
 
 	sigChan := make(chan os.Signal, 1)

@@ -24,6 +24,9 @@ func HandleChat(w http.ResponseWriter, r *http.Request) {
 	roomCode := r.URL.Query().Get("room")
 	userName := r.URL.Query().Get("user")
 
+	fmt.Println("RoomCode in handleChat", roomCode)
+	fmt.Println("userName in handleChat", userName)
+
 	if roomCode == "" || userName == "" {
 		http.Error(w, "Missing room code or user name", http.StatusBadRequest)
 		return
@@ -40,6 +43,8 @@ func HandleChat(w http.ResponseWriter, r *http.Request) {
 		roomsConnections[roomCode] = make(map[string]*websocket.Conn)
 	}
 
+	fmt.Println("RoomsConnections[roomCode]", roomsConnections[roomCode])
+
 	for name, clientConn := range roomsConnections[roomCode] {
 		if name != userName {
 			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName}
@@ -50,6 +55,7 @@ func HandleChat(w http.ResponseWriter, r *http.Request) {
 
 	roomsConnections[roomCode][userName] = conn
 	fmt.Printf("User '%s' joined room '%s'\n", userName, roomCode)
+	fmt.Println("RoomsConnections[roomCode]", roomsConnections[roomCode])
 	mu.Unlock()
 
 	defer func() {
@@ -70,6 +76,7 @@ func HandleChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleConnection(conn *websocket.Conn, roomCode string, senderName string) {
+	fmt.Println("HandleConnection")
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -103,8 +110,8 @@ func handleConnection(conn *websocket.Conn, roomCode string, senderName string) 
 				fmt.Printf("Receiver %s not found in room %s\n", message.Receiver, roomCode)
 			}
 		} else {
-			for name, clientConn := range room {
-				if name != senderName && message.Type == "text" {
+			for _, clientConn := range room {
+				if message.Type == "text" {
 					if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {
 						fmt.Println("Error broadcasting message:", err)
 					}
