@@ -40,7 +40,7 @@ window.addEventListener("DOMContentLoaded", () => {
     checkPlayerCount()
 
     function onStartButtonClick() {
-        fetch("http://localhost:8080/start", {
+        fetch("/start", {
             method: "POST",
             headers: { 'Content-Type': "application/json" },
             body: JSON.stringify({ roomCode, currentUserName })
