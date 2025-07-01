@@ -5,7 +5,6 @@ window.addEventListener("DOMContentLoaded", () => {
     const roleContainer = document.getElementById('roleContainer');
     const roleText = document.getElementById('roleText');
     const gameArea = document.getElementById('gameArea');
-    // const gameScreen = document.getElementById('gameScreen');
     const sendButton = document.getElementById("sendButton")
     const microphoneButton = document.getElementById("micButton")
     const cameraButton = document.getElementById("cameraButton")
@@ -99,9 +98,21 @@ window.addEventListener("DOMContentLoaded", () => {
     async function setupLocalMedia() {
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            console.log("Audio tracks:", localStream.getAudioTracks());
+            console.log("Audio tracks:", localStream.getAudioTracks())
 
-            return true;
+            const videoContainer = document.querySelector(`.video-container[data-player-name="${currentUserName}"]`)
+            if (videoContainer) {
+                const video = videoContainer.querySelector("video.video-element")
+                const placeholder = videoContainer.querySelector(".video-placeholder")
+
+                placeholder.style.display = 'none'
+                video.srcObject = localStream
+                video.muted = true
+
+                video.style.display = "block" // or "flex", "inline-block", etc. depending on the css(check it up later)
+            }
+
+            return true
         } catch (err) {
             console.error("Error accessing media devices:", err)
             alert("Could not access your camera and microphone. Please check permissions")
@@ -111,7 +122,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function connectToSignalingServer() {
         ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}&user=${currentUserName}`)
-        // ws.binaryType = "arraybuffer"
     
         ws.onopen = function() {
             console.log("Connected to WebSocket server")
@@ -213,16 +223,16 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     async function handleAnswer(senderName, sdp) {
-        const pc = peerConnections[senderName];
+        const pc = peerConnections[senderName]
         if (pc) {
-            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp))
         }
     }
 
     async function handleIceCandidate(senderName, candidate) {
-        const pc = peerConnections[senderName];
+        const pc = peerConnections[senderName]
         if (pc) {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            await pc.addIceCandidate(new RTCIceCandidate(candidate))
         }
     }
 
@@ -245,22 +255,23 @@ window.addEventListener("DOMContentLoaded", () => {
     function toggleCamera() {
         if (!localStream) return
 
-        const videoContainer = document.querySelector(`.video-container[data-player-name="${currentUserName}"]`)
-        if (videoContainer) {
-            const video = videoContainer.querySelector("video.video-element")
-            const placeholder = videoContainer.querySelector(".video-placeholder")
-            placeholder.style.display = 'none'
-            video.srcObject = localStream
-            video.muted = true
-        }
-
         const videoTrack = localStream.getVideoTracks()[0];
         if (videoTrack) {
             console.log("Video tracks")
-            videoTrack.enabled = !videoTrack.enabled;
-            const placeholder = document.querySelector(`.video-container[data-player-name="${currentUserName}"] .video-placeholder`);
-            placeholder.style.display = videoTrack.enabled ? 'none' : 'flex';
-            cameraButton.className = `control-button camera-button ${videoTrack.enabled ? 'on' : 'off'}`;
+            videoTrack.enabled = !videoTrack.enabled
+
+            const placeholder = document.querySelector(`.video-container[data-player-name="${currentUserName}"] .video-placeholder`)
+            const videoElement = document.querySelector(`.video-container[data-player-name="${currentUserName}"] .video-element`)
+
+            if (videoTrack.enabled) {
+                videoElement.style.display = "block" // or flex . etc depending on the css (check it later)
+                placeholder.style.display = "none"
+                cameraButton.className = "control-button camera-button on"
+            } else {
+                videoElement.style.display = "none"
+                placeholder.style.disabled = "flex" // or block .etc depending on the css (check it later)
+                cameraButton.className = "control-button camera-button off"
+            }
         }
     }
 
