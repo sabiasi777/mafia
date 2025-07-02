@@ -108,6 +108,7 @@ func handleConnection(conn *websocket.Conn, roomCode string, senderName string) 
 
 		if message.Receiver != "" {
 			if targetConn, ok := room[message.Receiver]; ok {
+				fmt.Printf("Relaying message from %s to %s\n", senderName, message.Receiver)
 				if err := targetConn.WriteMessage(websocket.TextMessage, msg); err != nil {
 					fmt.Printf("Error sending private message to %s: %v\n", message.Receiver, err)
 				}
@@ -115,12 +116,10 @@ func handleConnection(conn *websocket.Conn, roomCode string, senderName string) 
 				fmt.Printf("Receiver %s not found in room %s\n", message.Receiver, roomCode)
 			}
 		} else {
-			fmt.Println("Broadcasting text message")
-			for _, clientConn := range room {
-				if message.Type == "text" {
-					if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {
-						fmt.Println("Error broadcasting message:", err)
-					}
+			fmt.Printf("Broadcasting message from %s\n", senderName)
+			for name, clientConn := range room {
+				if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {
+					fmt.Printf("Error broadcasting to user %s: %v\n", name, err)
 				}
 			}
 		}

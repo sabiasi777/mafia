@@ -122,7 +122,9 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function connectToSignalingServer() {
-        ws = new WebSocket(`ws://localhost:8080/ws/chat?room=${roomCode}&user=${currentUserName}`)
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws"
+        const host = window.location.host
+        ws = new WebSocket(`${protocol}://${host}/ws/chat?room=${roomCode}&user=${currentUserName}`)
     
         ws.onopen = function() {
             console.log("Connected to WebSocket server")
@@ -267,12 +269,12 @@ window.addEventListener("DOMContentLoaded", () => {
             const videoElement = document.querySelector(`.video-container[data-player-name="${currentUserName}"] .video-element`)
 
             if (videoTrack.enabled) {
-                videoElement.style.display = "block" // or flex . etc depending on the css (check it later)
+                videoElement.style.display = "block"
                 placeholder.style.display = "none"
                 cameraButton.className = "control-button camera-button on"
             } else {
                 videoElement.style.display = "none"
-                placeholder.style.disabled = "flex" // or block .etc depending on the css (check it later)
+                placeholder.style.display = "flex"
                 cameraButton.className = "control-button camera-button off"
             }
         }
