@@ -86,6 +86,8 @@ func handleConnection(conn *websocket.Conn, roomCode string, senderName string) 
 			break
 		}
 
+		fmt.Println("conn.ReadMessage():", string(msg))
+
 		var message models.SignalingMessage
 		if err := json.Unmarshal(msg, &message); err != nil {
 			fmt.Println("Error unmarshaling message:", err)
@@ -93,6 +95,7 @@ func handleConnection(conn *websocket.Conn, roomCode string, senderName string) 
 		}
 
 		message.Sender = senderName
+		fmt.Println("message.Receiver:", message.Receiver)
 
 		mu.Lock()
 		room, ok := roomsConnections[roomCode]
@@ -100,6 +103,8 @@ func handleConnection(conn *websocket.Conn, roomCode string, senderName string) 
 			mu.Unlock()
 			continue
 		}
+
+		fmt.Println("roomsConnections[roomCode]:", room)
 
 		if message.Receiver != "" {
 			if targetConn, ok := room[message.Receiver]; ok {
@@ -110,6 +115,7 @@ func handleConnection(conn *websocket.Conn, roomCode string, senderName string) 
 				fmt.Printf("Receiver %s not found in room %s\n", message.Receiver, roomCode)
 			}
 		} else {
+			fmt.Println("Broadcasting text message")
 			for _, clientConn := range room {
 				if message.Type == "text" {
 					if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {

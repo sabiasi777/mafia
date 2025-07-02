@@ -64,6 +64,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 type: "text"
             }
             console.log("SENDING (text)")
+            console.log("message Data:", messageData)
             ws.send(JSON.stringify(messageData))
             input.value = ""
             console.log("MESSAGE (text) has been sent")
@@ -134,6 +135,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             switch (message.type) {
                 case "text":
+                    console.log("Received text")
                     displayChatMessage(message)
                     break
                 case "player-joined":
@@ -149,6 +151,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     await handleAnswer(message.sender, message.sdp)
                     break
                 case "candidate":
+                    console.log("Received candidate")
                     await handleIceCandidate(message.sender, message.candidate)
                     break;
             }
@@ -240,7 +243,7 @@ window.addEventListener("DOMContentLoaded", () => {
         console.log("microphone button")
         if (!localStream) return;
         const audioTrack = localStream.getAudioTracks()[0];
-        console.log("AUDIOTRACK:", audioTrack)
+        console.log("AUDIOTRACK:", localStream.getAudioTracks())
         if (audioTrack) {
             console.log("AUDIO TRACK EXISTS")
             audioTrack.enabled = !audioTrack.enabled;
