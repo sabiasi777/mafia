@@ -21,15 +21,26 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-
 	roomCode := req.RoomCode
+	username := req.CurrentUser
+
+	fmt.Println("StartGame - Handler -> r.FormValue(`username`):", username)
+	fmt.Println("StartGame - Handler -> rm.Rooms[roomCode].Owner:", rm.Rooms[roomCode].Owner)
+
+	if username != rm.Rooms[roomCode].Owner {
+		http.Error(w, "Only room owner can start", http.StatusForbidden)
+		return
+	}
+
 	room, exists := rm.Rooms[roomCode]
 	if !exists {
 		http.NotFound(w, r)
 		return
 	}
 
+	// TEMPORARY
 	rm.Rooms[roomCode].CurrentUser = req.CurrentUser
+	fmt.Println("rm.Rooms[roomCode].CurrentUser", rm.Rooms[roomCode].CurrentUser)
 
 	logic.AssignRoles(room)
 	fmt.Println("LETS SAY THE ROLE:")

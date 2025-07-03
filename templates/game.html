@@ -8,6 +8,8 @@
     <script src="/assets/js/game.js"></script>
 </head>
 <body>
+    <div id="gameData" data-owner="{{.Owner}}"></div>
+    
     <a href="/" class="home-link">← Mafia</a>
     
     <div class="container">
@@ -43,7 +45,11 @@
             </div>
 
             <button class="start-button" id="startButton" type="button" disabled>
-                🎮 Start Game
+                {{if eq .CurrentUser .Owner}}
+                    🎮 Start Game
+                {{else}}
+                    Waiting for owner to start
+                {{end}}
             </button>
 
             <div class="status-bar" id="statusBar">

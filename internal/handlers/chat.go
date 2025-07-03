@@ -20,7 +20,7 @@ var upgrader = websocket.Upgrader{
 var roomsConnections = make(map[string]map[string]*websocket.Conn)
 var mu sync.Mutex
 
-func HandleChat(w http.ResponseWriter, r *http.Request) {
+func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	roomCode := r.URL.Query().Get("room")
 	userName := r.URL.Query().Get("user")
 
@@ -50,6 +50,12 @@ func HandleChat(w http.ResponseWriter, r *http.Request) {
 			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName}
 			payload, _ := json.Marshal(joinMsg)
 			clientConn.WriteMessage(websocket.TextMessage, payload)
+
+			playerListMsg := models.SignalingMessage{Type: "player-list-update", Players: rm.getCurrentPlayers(roomCode)}
+			listPayLoad, _ := json.Marshal(playerListMsg)
+			clientConn.WriteMessage(websocket.TextMessage, listPayLoad)
+
+			// Remove this list variables and update case: "player-join" for both join and update
 		}
 	}
 

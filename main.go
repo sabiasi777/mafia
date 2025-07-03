@@ -20,7 +20,8 @@ func main() {
 
 	permanentRoomCode := "ADMIN"
 	room := models.Room{
-		Code: permanentRoomCode,
+		Code:  permanentRoomCode,
+		Owner: "Saba",
 		Players: []models.Player{
 			{Name: "Saba", Role: "Villager", IsActive: true},
 			{Name: "Beqa", Role: "Villager", IsActive: true},
@@ -39,7 +40,7 @@ func main() {
 	http.HandleFunc("/join", manager.JoinHandler)
 	http.HandleFunc("/create", manager.CreateRoom)
 	http.HandleFunc("/start", manager.StartGame)
-	http.HandleFunc("/ws/chat", handlers.HandleChat)
+	http.HandleFunc("/ws/chat", manager.HandleChat)
 
 	// http.HandleFunc("/audio", handlers.HandleAudio)
 

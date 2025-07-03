@@ -17,6 +17,7 @@ type Room struct {
 	Players     []Player
 	ActiveRoles []string
 	CurrentUser string
+	Owner       string
 }
 
 type Page struct {
@@ -31,7 +32,7 @@ type AudioMessage struct {
 
 type StartRequest struct {
 	RoomCode    string `json:"roomCode"`
-	CurrentUser string `json:"currentUser"`
+	CurrentUser string `json:"currentUserName"`
 }
 
 type Client struct {
@@ -47,4 +48,5 @@ type SignalingMessage struct {
 	Sdp       json.RawMessage `json:"sdp,omitempty"`
 	Candidate json.RawMessage `json:"candidate,omitempty"`
 	Name      string          `json:"name,omitempty"`
+	Players   []Player        `json:""`
 }

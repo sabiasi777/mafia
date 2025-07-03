@@ -1,6 +1,4 @@
 window.addEventListener("DOMContentLoaded", () => {
-
-    const startButton = document.getElementById("startButton")
     const playerList = document.getElementById("playerList")
     const roleContainer = document.getElementById('roleContainer');
     const roleText = document.getElementById('roleText');
@@ -8,6 +6,9 @@ window.addEventListener("DOMContentLoaded", () => {
     const sendButton = document.getElementById("sendButton")
     const microphoneButton = document.getElementById("micButton")
     const cameraButton = document.getElementById("cameraButton")
+
+    const gameData = document.getElementById("gameData")
+    const roomOwner = gameData.dataset.owner
 
     const peerConnections = {}
 
@@ -20,6 +21,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     cameraButton.disabled = true;
     microphoneButton.disabled = true;
+
     
     var roomCode = window.location.pathname.split("/").pop()
     console.log("roomCode after declaring the variable:", roomCode)
@@ -27,7 +29,13 @@ window.addEventListener("DOMContentLoaded", () => {
     var localStream
     var currentUserName = getCurrentUserNameFromURL()
 
-    startButton.addEventListener('click', onStartButtonClick);
+
+    // if (currentUserName !== roomOwner) {
+    //     console.log("CurrentUserName is not equal to roomOwner")
+    //     startButton.disabled = true
+    // }
+
+    startButton.addEventListener('click', onStartButtonClick)
     sendButton.addEventListener('click', onSendButtonClick);
     microphoneButton.addEventListener('click', toggleMicrophone);
     cameraButton.addEventListener('click', toggleCamera);
@@ -155,7 +163,14 @@ window.addEventListener("DOMContentLoaded", () => {
                 case "candidate":
                     console.log("Received candidate")
                     await handleIceCandidate(message.sender, message.candidate)
-                    break;
+                    break
+                case "player-list-update":
+                    console.log("player-list-update")
+                    updatePlayerListUI(message.players)
+                    break
+                case "game-start":
+                    startGameUI(message.name)
+                    break
             }
         }
     
@@ -167,6 +182,24 @@ window.addEventListener("DOMContentLoaded", () => {
         ws.onerror = function(error) {
             console.error("WebSocket error:", error)
         }
+    }
+
+    function updatePlayerListUI(players) {
+        const playerList = document.getElementById("playerList")
+        const playerCountElement = document.querySelector(".player-count")
+
+        playerList.innerHTML = ""
+
+        players.forEach(player => {
+            const li = document.createElement("li")
+            li.className = `player-item ${player.IsActive} ? "active" : ""`
+            li.textContent = player.Name
+            playerList.appendChild(li)
+        })
+
+        playerCountElement.textContent = players.length
+
+        checkPlayerCount()
     }
 
     function createPeerConnection(playerName) {
@@ -297,8 +330,8 @@ window.addEventListener("DOMContentLoaded", () => {
         const playerCount = playerList.querySelectorAll("li").length;
         const countElement = document.querySelector('.player-count');
         if (countElement) countElement.textContent = playerCount;
-        startButton.disabled = playerCount < 4;
-        startButton.innerHTML = playerCount >= 4 ? '🎮 Start Game' : `🎮 Need ${4 - playerCount} more players`;
+        startButton.disabled = currentUserName !== roomOwner || playerCount < 4
+        startButton.innerHTML = playerCount >= 4 ? currentUserName === roomOwner ? '🎮 Start Game' : 'Waiting for owner to start' : `🎮 Need ${4 - playerCount} more players`;
     }
 
     function getCurrentUserNameFromURL() {
