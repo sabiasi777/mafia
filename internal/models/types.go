@@ -48,5 +48,5 @@ type SignalingMessage struct {
 	Sdp       json.RawMessage `json:"sdp,omitempty"`
 	Candidate json.RawMessage `json:"candidate,omitempty"`
 	Name      string          `json:"name,omitempty"`
-	Players   []Player        `json:""`
+	Players   []Player        `json:"players"`
 }

@@ -46,15 +46,20 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("RoomsConnections[roomCode]", roomsConnections[roomCode])
 
 	for name, clientConn := range roomsConnections[roomCode] {
+		fmt.Printf("name %s and userName %s", name, userName)
 		if name != userName {
 			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName}
 			payload, _ := json.Marshal(joinMsg)
 			clientConn.WriteMessage(websocket.TextMessage, payload)
 
+			fmt.Println("Sent player-joined message")
+
 			playerListMsg := models.SignalingMessage{Type: "player-list-update", Players: rm.getCurrentPlayers(roomCode)}
 			listPayLoad, _ := json.Marshal(playerListMsg)
 			clientConn.WriteMessage(websocket.TextMessage, listPayLoad)
-
+			
+			fmt.Println("PlayerListmsg.Players:", playerListMsg.Players)
+			fmt.Println("Sent player-list-update message")
 			// Remove this list variables and update case: "player-join" for both join and update
 		}
 	}
