@@ -38,7 +38,6 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TEMPORARY
 	rm.Rooms[roomCode].CurrentUser = req.CurrentUser
 	fmt.Println("rm.Rooms[roomCode].CurrentUser", rm.Rooms[roomCode].CurrentUser)
 
@@ -46,6 +45,8 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("LETS SAY THE ROLE:")
 	fmt.Println(room.Players[len(room.Players)-1].Role, room.Players[len(room.Players)-1].Name)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(room.Players)
+	rm.BroadcastGameStart(roomCode)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Game starting..."))
 }

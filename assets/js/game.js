@@ -34,8 +34,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     connectToSignalingServer();
     cameraButton.disabled = false;
     microphoneButton.disabled = false;
-
-    // REMOVE THIS DISABLED IF NECESSARY
   }
  
   console.log("Called connectToSignalingServer function");
@@ -56,18 +54,18 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // send signal on startButtonClick
   function onStartButtonClick() {    
-    fetch("/start", {      
+    fetch("/start", {
       method: "POST",      
       headers: { 'Content-Type': "application/json" },      
       body: JSON.stringify({ roomCode, currentUserName })      
     })    
-      .then(res => res.ok ? res.json() : Promise.reject("Failed to start game"))    
-      .then(data => {	
-	const me = data.find(p => p.name === currentUserName);	
-	//if (me) startGameUI(me);
-	// Call the startGameUI function on game-start signal or sth like that	
-      })    
-      .catch(err => console.error(err));    
+	  .then(res => {
+	      if (!res.ok) {
+		  return Promise.reject("Server returned an error")
+	      }
+	      console.log("Start request sent successfully. Waiting for server broadcast.")
+	  })
+	  .catch(err => console.error("Failed to start game:", err));    
   }
 
   function onSendButtonClick() {    
@@ -101,15 +99,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     
     setTimeout(async () => {      
       roleContainer.style.display = "none";      
-      gameArea.style.display = "grid";
-      
-      // const mediaReady = await setupLocalMedia();
-
-      // if (mediaReady) {	
-      // 	cameraButton.disabled = false;	
-      // 	microphoneButton.disabled = false;	
-      // }
-      
+	gameArea.style.display = "grid";
+	
     }, 3000);  
   }
   
@@ -126,7 +117,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 	placeholder.style.display = 'none';	
 	video.srcObject = localStream;	
 	video.muted = true;	
-	video.style.display = "block"; // or "flex", "inline-block", etc. depending on the css(check it up later)	
+	video.style.display = "block";
       }
             
       return true;      
@@ -180,7 +171,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 	break;	
       case "game-start":
 	console.log("game-start");
-	startGameUI(message.name);
+	  startGameUI(message.me);
 	break;
       }
     };

@@ -9,40 +9,22 @@ import (
 	"syscall"
 
 	"github.com/sabiasi777/mafia/internal/handlers"
-	"github.com/sabiasi777/mafia/internal/models"
 )
 
 func main() {
-	manager := handlers.RoomManager{
-		Rooms: make(map[string]*models.Room),
-		Tmpl:  template.Must(template.ParseGlob("templates/*.html")),
-	}
+	rm := handlers.NewRoomManager()
 
-	permanentRoomCode := "ADMIN"
-	room := models.Room{
-		Code:  permanentRoomCode,
-		Owner: "Saba",
-		Players: []models.Player{
-			{Name: "Saba", Role: "Villager", IsActive: true},
-			{Name: "Beqa", Role: "Villager", IsActive: true},
-			{Name: "Nodo", Role: "Doctor", IsActive: true},
-		},
-	}
-	manager.Rooms[permanentRoomCode] = &room
-
-	manager.Tmpl = template.Must(template.ParseGlob("templates/*.html"))
+	rm.Tmpl = template.Must(template.ParseGlob("templates/*.html"))
 	fs := http.FileServer(http.Dir("assets"))
 
 	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
 
-	http.HandleFunc("/", manager.IndexHandler)
-	http.HandleFunc("/room/", manager.RoomHandler)
-	http.HandleFunc("/join", manager.JoinHandler)
-	http.HandleFunc("/create", manager.CreateRoom)
-	http.HandleFunc("/start", manager.StartGame)
-	http.HandleFunc("/ws/chat", manager.HandleChat)
-
-	// http.HandleFunc("/audio", handlers.HandleAudio)
+	http.HandleFunc("/", rm.IndexHandler)
+	http.HandleFunc("/room/", rm.RoomHandler)
+	http.HandleFunc("/join", rm.JoinHandler)
+	http.HandleFunc("/create", rm.CreateRoom)
+	http.HandleFunc("/start", rm.StartGame)
+	http.HandleFunc("/ws/chat", rm.HandleChat)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
