@@ -196,29 +196,31 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
   
   function updatePlayerListUI(players) {
-    const playerList = document.getElementById("playerList");    
-    const playerCountElement = document.querySelector(".player-count");    
+      const playerList = document.getElementById("playerList");      
+      //const playerCountElement = document.querySelector(".player-count");      
+      playerList.innerHTML = "";
+      
+      console.log("PLAYERS IN UPDATEPLAYERLISTUI:", players);      
 
-    playerList.innerHTML = "";    
-
-    players.forEach(player => {      
-      const li = document.createElement("li");
-      console.log("player.IsActive", player.IsActive);
-      li.className = `player-item ${player.IsActive} ? "active" : ""`;      
-      li.textContent = player.Name;      
-      playerList.appendChild(li);     
-    });
-    
-    playerCountElement.textContent = players.length;    
-    checkPlayerCount();    
+      players.forEach(player => {	  
+	  const li = document.createElement("li");	  
+	  console.log("player.isactive", player.isactive);
+	  li.className = `player-item ${player.isactive ? "active" : ""}`;
+	  li.className = li.className.trim();
+	  li.textContent = player.name;
+	  playerList.appendChild(li);     
+      });
+      
+  //    playerCountElement.textContent = players.length;      
+    //  checkPlayerCount();      
   }
   
   function createPeerConnection(playerName) {    
     if (peerConnections[playerName]) return peerConnections[playerName];
     
-    const pc = new RTCPeerConnection(configuration);    
-    peerConnections[playerName] = pc;
-    
+      const pc = new RTCPeerConnection(configuration);      
+      peerConnections[playerName] = pc;
+      
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
     
     pc.ontrack = (event) => {      
@@ -251,7 +253,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     ws.send(JSON.stringify({      
       type: 'offer',      
       sender: currentUserName,      
-      receiver: playerName,      
+      receiver: playerName,
       sdp: pc.localDescription,      
     }));    
   }  

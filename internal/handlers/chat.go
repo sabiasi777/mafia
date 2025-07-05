@@ -46,7 +46,7 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("RoomsConnections[roomCode]", roomsConnections[roomCode])
 
 	for name, clientConn := range roomsConnections[roomCode] {
-		fmt.Printf("name %s and userName %s", name, userName)
+		fmt.Printf("name %s and userName %s\n", name, userName)
 		if name != userName {
 			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName}
 			payload, _ := json.Marshal(joinMsg)

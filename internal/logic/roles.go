@@ -35,6 +35,7 @@ func AssignRoles(room *models.Room) {
 	for i := range room.Players {
 		room.Players[i].Role = roles[i]
 	}
+
 }
 
 func GetActiveRoles(playerCount int) []string {
