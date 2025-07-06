@@ -48,9 +48,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   
 
   const observer = new MutationObserver(checkPlayerCount);  
-  observer.observe(playerList, { childList: true });  
-  checkPlayerCount();
-
+  observer.observe(playerList, { childList: true });
 
   // send signal on startButtonClick
   function onStartButtonClick() {    
@@ -188,7 +186,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   
   function updatePlayerListUI(players) {
       const playerList = document.getElementById("playerList");      
-      //const playerCountElement = document.querySelector(".player-count");      
+      const playerCountElement = document.querySelector(".player-count");      
       playerList.innerHTML = "";
       
       console.log("PLAYERS IN UPDATEPLAYERLISTUI:", players);      
@@ -202,8 +200,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 	  playerList.appendChild(li);     
       });
       
-  //    playerCountElement.textContent = players.length;      
-    //  checkPlayerCount();      
+      playerCountElement.textContent = players.length;      
+      checkPlayerCount();      
   }
   
   function createPeerConnection(playerName) {    
@@ -332,8 +330,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   
   function checkPlayerCount() {    
     const playerCount = playerList.querySelectorAll("li").length;    
-    const countElement = document.querySelector('.player-count');    
-    if (countElement) countElement.textContent = playerCount;    
+      const countElement = document.querySelector('.player-count');
+      const warning = document.querySelector(".warning")
+      if (countElement) countElement.textContent = playerCount;
+      warning.style.display = playerCount >= 4 ? "none" : "block"
     startButton.disabled = currentUserName !== roomOwner || playerCount < 4;    
     startButton.innerHTML = playerCount >= 4 ? currentUserName === roomOwner ? '🎮 Start Game' : 'Waiting for owner to start' : `🎮 Need ${4 - playerCount} more players`;    
   }

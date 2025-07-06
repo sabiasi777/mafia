@@ -41,28 +41,24 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 		rm.Connections[roomCode] = make(map[string]*websocket.Conn)
 	}
 
+	rm.Connections[roomCode][userName] = conn
+	
+	fmt.Printf("User '%s' connected to room '%s'\n", userName, roomCode)
 	fmt.Println("RoomsConnections[roomCode]", rm.Connections[roomCode])
-
 	for name, clientConn := range rm.Connections[roomCode] {
 		fmt.Printf("name %s and userName %s\n", name, userName)
 		if name != userName {
-			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName}
+			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName, Players: rm.getCurrentPlayers(roomCode)}
 			payload, _ := json.Marshal(joinMsg)
 			clientConn.WriteMessage(websocket.TextMessage, payload)
 
 			fmt.Println("Sent player-joined message")
 
-			playerListMsg := models.SignalingMessage{Type: "player-list-update", Players: rm.getCurrentPlayers(roomCode)}
+			playerListMsg := models.SignalingMessage{Type: "player-list-update", Players: rm.getCurrentPlayers(roomCode), Name: userName}
 			listPayLoad, _ := json.Marshal(playerListMsg)
 			clientConn.WriteMessage(websocket.TextMessage, listPayLoad)
-
-			fmt.Println("PlayerListmsg.Players:", playerListMsg.Players)
-			fmt.Println("Sent player-list-update message")
-			// Remove this list variables and update case: "player-join" for both join and update
 		}
 	}
-
-	rm.Connections[roomCode][userName] = conn
 	fmt.Printf("User '%s' joined room '%s'\n", userName, roomCode)
 	fmt.Println("RoomsConnections[roomCode]", rm.Connections[roomCode])
 	rm.mu.Unlock()
