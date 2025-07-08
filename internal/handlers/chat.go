@@ -16,7 +16,6 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
-var roomsConnections = make(map[string]map[string]*websocket.Conn)
 
 func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	roomCode := r.URL.Query().Get("room")
@@ -42,9 +41,10 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rm.Connections[roomCode][userName] = conn
-	
+
 	fmt.Printf("User '%s' connected to room '%s'\n", userName, roomCode)
 	fmt.Println("RoomsConnections[roomCode]", rm.Connections[roomCode])
+
 	for name, clientConn := range rm.Connections[roomCode] {
 		fmt.Printf("name %s and userName %s\n", name, userName)
 		if name != userName {
@@ -67,9 +67,31 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 		rm.mu.Lock()
 		if room, exists := rm.Connections[roomCode]; exists {
 			delete(room, userName)
+			players := rm.Rooms[roomCode].Players
+
+			for i, player := range players {
+				if player.Name == userName {
+					rm.Rooms[roomCode].Players = append(players[:i], players[i+1:]...)
+					break
+				}
+			}
 			if len(room) == 0 {
 				delete(rm.Connections, roomCode)
 				fmt.Printf("Room '%s' is now empty and closed.\n", roomCode)
+			}
+
+			fmt.Printf("%s left the room: %v\n", userName, room)
+			fmt.Println("getting current players", rm.getCurrentPlayers(roomCode))
+
+			leaveMsg := models.SignalingMessage{
+				Type:    "player-list-update",
+				Name:    userName,
+				Players: rm.getCurrentPlayers(roomCode),
+			}
+			payload, _ := json.Marshal(leaveMsg)
+
+			for _, clientConn := range room {
+				clientConn.WriteMessage(websocket.TextMessage, payload)
 			}
 		}
 		rm.mu.Unlock()
@@ -109,8 +131,6 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			continue
 		}
 
-		fmt.Println("roomsConnections[roomCode]:", room)
-
 		if message.Receiver != "" {
 			if targetConn, ok := room[message.Receiver]; ok {
 				fmt.Printf("Relaying message from %s to %s\n", senderName, message.Receiver)
@@ -145,6 +165,7 @@ func (rm *RoomManager) BroadcastGameStart(roomCode string) {
 
 	for _, player := range room.Players {
 		if conn, ok := connections[player.Name]; ok {
+			fmt.Printf("player from room.Players: %s", player)
 			message := models.SignalingMessage{
 				Type: "game-start",
 				Me: &models.Player{

@@ -35,7 +35,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", nil); err != nil {
 		fmt.Printf("error listening:%v\n", err)
 		return
 	}

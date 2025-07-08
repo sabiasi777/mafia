@@ -14,7 +14,7 @@ type Player struct {
 
 type Room struct {
 	Code        string
-	Players     []Player
+	Players     []Player // Players map[string]*Player
 	ActiveRoles []string
 	CurrentUser string
 	Owner       string
@@ -49,5 +49,5 @@ type SignalingMessage struct {
 	Candidate json.RawMessage `json:"candidate,omitempty"`
 	Name      string          `json:"name,omitempty"`
 	Players   []Player        `json:"players,omitempty"`
-	Me *Player `json:"me,omitempty"`
+	Me        *Player         `json:"me,omitempty"`
 }
