@@ -45,16 +45,22 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("User '%s' connected to room '%s'\n", userName, roomCode)
 	fmt.Println("RoomsConnections[roomCode]", rm.Connections[roomCode])
 
+	playerListMsg := models.SignalingMessage{
+		Type:    "player-list-update",
+		Players: rm.getCurrentPlayers(roomCode),
+		Name:    userName,
+	}
+	listPayLoad, _ := json.Marshal(playerListMsg)
+	conn.WriteMessage(websocket.TextMessage, listPayLoad)
+
 	for name, clientConn := range rm.Connections[roomCode] {
 		fmt.Printf("name %s and userName %s\n", name, userName)
 		if name != userName {
-			joinMsg := models.SignalingMessage{Type: "player-joined", Name: userName, Players: rm.getCurrentPlayers(roomCode)}
-			payload, _ := json.Marshal(joinMsg)
-			clientConn.WriteMessage(websocket.TextMessage, payload)
-
-			fmt.Println("Sent player-joined message")
-
-			playerListMsg := models.SignalingMessage{Type: "player-list-update", Players: rm.getCurrentPlayers(roomCode), Name: userName}
+			playerListMsg := models.SignalingMessage{
+				Type:    "player-list-update",
+				Players: rm.getCurrentPlayers(roomCode),
+				Name:    userName,
+			}
 			listPayLoad, _ := json.Marshal(playerListMsg)
 			clientConn.WriteMessage(websocket.TextMessage, listPayLoad)
 		}
@@ -65,6 +71,7 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		rm.mu.Lock()
+
 		if room, exists := rm.Connections[roomCode]; exists {
 			delete(room, userName)
 			players := rm.Rooms[roomCode].Players
@@ -161,17 +168,19 @@ func (rm *RoomManager) BroadcastGameStart(roomCode string) {
 
 	if !roomExists || !connectionsExist {
 		fmt.Println("Broadcast Error: Room or connections not found for", roomCode)
+		return
 	}
 
 	for _, player := range room.Players {
 		if conn, ok := connections[player.Name]; ok {
-			fmt.Printf("player from room.Players: %s", player)
+			fmt.Printf("player from room.Players: %v\n", player)
 			message := models.SignalingMessage{
 				Type: "game-start",
 				Me: &models.Player{
 					Name: player.Name,
 					Role: player.Role,
 				},
+				Players: rm.getCurrentPlayers(roomCode),
 			}
 
 			payload, err := json.Marshal(message)
