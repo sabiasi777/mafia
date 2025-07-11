@@ -23,13 +23,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     microphoneButton.disabled = true;
 
     var roomCode = window.location.pathname.split("/").pop();
-    console.log("roomCode after declaring the variable:", roomCode);
 
     var ws;
     var localStream;
     var currentUserName = getCurrentUserNameFromURL(); 
 
-    // FIXED: Move event listeners before connecting to signaling server
     startButton.addEventListener('click', onStartButtonClick);
     sendButton.addEventListener('click', onSendButtonClick);
     microphoneButton.addEventListener('click', toggleMicrophone);
@@ -41,7 +39,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const observer = new MutationObserver(checkPlayerCount);
     observer.observe(playerList, { childList: true });
 
-    console.log("Called connectToSignalingServer function");
     connectToSignalingServer();
 
     async function onStartButtonClick() {
@@ -77,7 +74,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     function onSendButtonClick() {
-        console.log("Send button");
         const input = document.getElementById("messageInput");
 
         if (input.value.trim() && ws) {
@@ -88,16 +84,12 @@ window.addEventListener("DOMContentLoaded", async () => {
                 type: "text"
             };
 
-            console.log("SENDING (text)");
-            console.log("message Data:", messageData);
             ws.send(JSON.stringify(messageData));
             input.value = "";
-            console.log("MESSAGE (text) has been sent");
         }
     }
 
     function startGameUI(me, players) {
-        console.log("Local stream when game starts:", localStream)
         document.getElementById("gameInfo").style.display = "none";
         document.getElementById("statusBar").style.display = "none";
         document.getElementsByTagName("header")[0].style.display = "none";
@@ -125,6 +117,22 @@ window.addEventListener("DOMContentLoaded", async () => {
                     </div>
                 </div>`;
             videoGrid.appendChild(videoContainer);
+
+            if (player.name === me.name) {
+                const videoElement = videoContainer.querySelector("video.video-element")
+                const placeholder = videoContainer.querySelector(".video-placeholder")
+
+                if (localStream) {
+                    videoElement.srcObject = localStream
+                    videoElement.muted = true
+                    placeholder.style.display = "none"
+                    videoElement.style.display = "block"
+                }
+            } else {
+                if (me.name < player.name) {
+                    createAndSendOffer(player.name)
+                }
+            }
         });
 
         roleText.textContent = `Your role: ${me.role}`;
@@ -160,7 +168,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     function connectToSignalingServer() {
-        console.log("connectToSignalingServer() has been called");
         const protocol = window.location.protocol === "https:" ? "wss" : "ws";
         const host = window.location.host;
         ws = new WebSocket(`${protocol}://${host}/ws/chat?room=${roomCode}&user=${currentUserName}`);
@@ -285,7 +292,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
         const pc = new RTCPeerConnection(configuration);
         peerConnections[playerName] = pc;
-        console.log("Peer connections:", peerConnections);
 
         if (localStream) {
             localStream.getTracks().forEach(track => pc.addTrack(track, localStream));   
@@ -359,12 +365,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     function toggleMicrophone() {
-        console.log("microphone button");
         if (!localStream) return;
         const audioTrack = localStream.getAudioTracks()[0];
-        console.log("AUDIOTRACK:", localStream.getAudioTracks());
         if (audioTrack) {
-            console.log("AUDIO TRACK EXISTS");
             audioTrack.enabled = !audioTrack.enabled;
             microphoneButton.className = `control-button mic-button ${audioTrack.enabled ? 'unmuted' : 'muted'}`;
             microphoneButton.textContent = audioTrack.enabled ? "🎙️" : "🎤";
@@ -381,7 +384,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
         const videoTrack = localStream.getVideoTracks()[0];
         if (videoTrack) {
-            console.log("Video tracks");
             videoTrack.enabled = !videoTrack.enabled;
 
             const placeholder = document.querySelector(`.video-container[data-player-name="${currentUserName}"] .video-placeholder`);

@@ -21,8 +21,7 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	roomCode := r.URL.Query().Get("room")
 	userName := r.URL.Query().Get("user")
 
-	fmt.Println("RoomCode in handleChat", roomCode)
-	fmt.Println("userName in handleChat", userName)
+	fmt.Println("Handle Chat")
 
 	if roomCode == "" || userName == "" {
 		http.Error(w, "Missing room code or user name", http.StatusBadRequest)
@@ -42,9 +41,6 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 
 	rm.Connections[roomCode][userName] = conn
 
-	fmt.Printf("User '%s' connected to room '%s'\n", userName, roomCode)
-	fmt.Println("RoomsConnections[roomCode]", rm.Connections[roomCode])
-
 	playerListMsg := models.SignalingMessage{
 		Type:    "player-list-update",
 		Players: rm.getCurrentPlayers(roomCode),
@@ -54,7 +50,6 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	conn.WriteMessage(websocket.TextMessage, listPayLoad)
 
 	for name, clientConn := range rm.Connections[roomCode] {
-		fmt.Printf("name %s and userName %s\n", name, userName)
 		if name != userName {
 			playerListMsg := models.SignalingMessage{
 				Type:    "player-list-update",
@@ -65,8 +60,6 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 			clientConn.WriteMessage(websocket.TextMessage, listPayLoad)
 		}
 	}
-	fmt.Printf("User '%s' joined room '%s'\n", userName, roomCode)
-	fmt.Println("RoomsConnections[roomCode]", rm.Connections[roomCode])
 	rm.mu.Unlock()
 
 	defer func() {
@@ -120,8 +113,6 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			break
 		}
 
-		fmt.Println("conn.ReadMessage():", string(msg))
-
 		var message models.SignalingMessage
 		if err := json.Unmarshal(msg, &message); err != nil {
 			fmt.Println("Error unmarshaling message:", err)
@@ -130,6 +121,8 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 
 		message.Sender = senderName
 		fmt.Println("message.Receiver:", message.Receiver)
+		fmt.Println("message.Sender:", message.Sender)
+		fmt.Println("message:", message)
 
 		rm.mu.Lock()
 		room, ok := rm.Connections[roomCode]
@@ -150,8 +143,10 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 		} else {
 			fmt.Printf("Broadcasting message from %s\n", senderName)
 			for name, clientConn := range room {
-				if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {
-					fmt.Printf("Error broadcasting to user %s: %v\n", name, err)
+				if name != senderName {
+					if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {
+						fmt.Printf("Error broadcasting to user %s: %v\n", name, err)
+					}
 				}
 			}
 		}
