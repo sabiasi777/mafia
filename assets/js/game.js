@@ -6,6 +6,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const sendButton = document.getElementById("sendButton");
     const microphoneButton = document.getElementById("micButton");
     const cameraButton = document.getElementById("cameraButton");
+    const finishSpeechButton = document.getElementById("finishSpeechButton")
     const gameData = document.getElementById("gameData");
     const startButton = document.getElementById("startButton");
     const roomOwner = gameData.dataset.owner;
@@ -35,6 +36,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("messageInput").addEventListener("keypress", (e) => {
         if (e.key === "Enter") onSendButtonClick();
     });
+    finishSpeechButton.addEventListener("click", () => {
+        ws.send(JSON.stringify({ type: "finish-speech" }))
+    })
 
     const observer = new MutationObserver(checkPlayerCount);
     observer.observe(playerList, { childList: true });
@@ -204,15 +208,15 @@ window.addEventListener("DOMContentLoaded", async () => {
                 case "ready-to-connect":
                     if (message.sender !== currentUserName) {
                         console.log(`${message.sender} is ready for video. Sending offer.`);
-                        // add a small delay to ensure all peers are ready
-                        setTimeout(() => {
-                            createAndSendOffer(message.sender);
-                        }, 100);
+                        createAndSendOffer(message.sender);
                     }
                     break;
                 case "game-start":
                     console.log("game-start");
                     startGameUI(message.me, message.players);
+                    break;
+            case "turn-update":
+                    turnUpdate(message.speakerName)
                     break;
             }
         };
@@ -227,13 +231,34 @@ window.addEventListener("DOMContentLoaded", async () => {
         };
     }
 
+    function turnUpdate(speakerName) {
+        console.log(`It's ${speakerName}'s turn to speak.`);
+
+        const allVideoContainers = document.querySelectorAll('.video-container');
+
+        allVideoContainers.forEach(container => {
+            container.classList.remove('is-speaking');
+        });
+
+        const speakerContainer = document.querySelector(`.video-container[data-player-name="${speakerName}"]`);
+        if (speakerContainer) {
+            speakerContainer.classList.add('is-speaking');
+        }
+
+        if (speakerName === currentUserName) {
+            finishSpeechButton.style.display = "block";
+            finishSpeechButton.disabled = false;
+        } else {
+            finishSpeechButton.style.display = "none";
+            finishSpeechButton.disabled = true;
+        }
+    }
+
     function updatePlayerListUI(players) {
         const playerList = document.getElementById("playerList");
         const playerCountElement = document.querySelector(".player-count");
-        const videoGrid = document.querySelector(".video-grid");
 
         playerList.innerHTML = "";
-        videoGrid.innerHTML = "";
 
         console.log("PLAYERS IN UPDATEPLAYERLISTUI:", players);
 
@@ -242,25 +267,6 @@ window.addEventListener("DOMContentLoaded", async () => {
             li.className = "player-item active";
             li.textContent = player.name;
             playerList.appendChild(li);
-
-            const videoContainer = document.createElement("div");
-            videoContainer.className = "video-container";
-            videoContainer.setAttribute("data-player-name", player.name);
-
-            videoContainer.innerHTML = `
-                <video class="video-element" playsinline autoplay></video>
-                <div class="video-placeholder">
-                    <div class="avatar">${player.name.charAt(0).toUpperCase()}</div>
-                    <div>${player.name}</div>
-                </div>
-                <div class="video-overlay">
-                    <span class="player-name">${player.name}</span>
-                    <div class="video-status">
-                        <div class="status-icon mic-off">🎤</div>
-                        <div class="status-icon camera-off">📷</div>
-                    </div>
-                </div>`;
-            videoGrid.appendChild(videoContainer);
         });
 
         if (localStream) {

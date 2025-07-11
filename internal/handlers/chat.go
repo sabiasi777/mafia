@@ -41,14 +41,6 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 
 	rm.Connections[roomCode][userName] = conn
 
-	playerListMsg := models.SignalingMessage{
-		Type:    "player-list-update",
-		Players: rm.getCurrentPlayers(roomCode),
-		Name:    userName,
-	}
-	listPayLoad, _ := json.Marshal(playerListMsg)
-	conn.WriteMessage(websocket.TextMessage, listPayLoad)
-
 	for name, clientConn := range rm.Connections[roomCode] {
 		if name != userName {
 			playerListMsg := models.SignalingMessage{
@@ -124,15 +116,38 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 		fmt.Println("message.Sender:", message.Sender)
 		fmt.Println("message:", message)
 
+		if message.Type == "finish-speech" {
+			room, ok := rm.Rooms[roomCode]
+			if !ok {
+				rm.mu.Unlock()
+				continue
+			}
+
+			if senderName == room.Players[room.CurrentSpeakerIndex].Name {
+				room.CurrentSpeakerIndex++
+
+				if room.CurrentSpeakerIndex >= len(room.Players) {
+					room.CurrentSpeakerIndex = 0
+				}
+
+				rm.mu.Unlock()
+				go rm.BroadcastTurnUpdate(roomCode)
+			} else {
+				rm.mu.Unlock()
+			}
+
+			continue
+		}
+
 		rm.mu.Lock()
-		room, ok := rm.Connections[roomCode]
+		connections, ok := rm.Connections[roomCode]
 		if !ok {
 			rm.mu.Unlock()
 			continue
 		}
 
 		if message.Receiver != "" {
-			if targetConn, ok := room[message.Receiver]; ok {
+			if targetConn, ok := connections[message.Receiver]; ok {
 				fmt.Printf("Relaying message from %s to %s\n", senderName, message.Receiver)
 				if err := targetConn.WriteMessage(websocket.TextMessage, msg); err != nil {
 					fmt.Printf("Error sending private message to %s: %v\n", message.Receiver, err)
@@ -142,8 +157,8 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			}
 		} else {
 			fmt.Printf("Broadcasting message from %s\n", senderName)
-			for name, clientConn := range room {
-				if name != senderName {
+			for name, clientConn := range connections {
+				if message.Type == "text" || name != senderName {
 					if err := clientConn.WriteMessage(websocket.TextMessage, msg); err != nil {
 						fmt.Printf("Error broadcasting to user %s: %v\n", name, err)
 					}
@@ -191,4 +206,29 @@ func (rm *RoomManager) BroadcastGameStart(roomCode string) {
 			}
 		}
 	}
+}
+
+func (rm *RoomManager) BroadcastTurnUpdate(roomCode string) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	room, roomExists := rm.Rooms[roomCode]
+	connections, connectionsExists := rm.Connections[roomCode]
+
+	if !roomExists || !connectionsExists {
+		return
+	}
+
+	currentSpeaker := room.Players[room.CurrentSpeakerIndex]
+
+	message := models.SignalingMessage{
+		Type:        "turn-update",
+		SpeakerName: currentSpeaker.Name,
+	}
+	payload, _ := json.Marshal(message)
+
+	for _, conn := range connections {
+		conn.WriteMessage(websocket.TextMessage, payload)
+	}
+
 }

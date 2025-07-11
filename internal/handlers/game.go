@@ -24,9 +24,6 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 	roomCode := req.RoomCode
 	username := req.CurrentUser
 
-	fmt.Println("StartGame - Handler -> r.FormValue(`username`):", username)
-	fmt.Println("StartGame - Handler -> rm.Rooms[roomCode].Owner:", rm.Rooms[roomCode].Owner)
-
 	if username != rm.Rooms[roomCode].Owner {
 		http.Error(w, "Only room owner can start", http.StatusForbidden)
 		return
@@ -39,11 +36,10 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rm.Rooms[roomCode].CurrentUser = req.CurrentUser
+	room.CurrentSpeakerIndex = 0
 	fmt.Println("rm.Rooms[roomCode].CurrentUser", rm.Rooms[roomCode].CurrentUser)
 
 	logic.AssignRoles(room)
-	fmt.Println("LETS SAY THE ROLE:")
-	fmt.Println(room.Players[len(room.Players)-1].Role, room.Players[len(room.Players)-1].Name)
 
 	rm.BroadcastGameStart(roomCode)
 

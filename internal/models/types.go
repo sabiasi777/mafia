@@ -13,11 +13,12 @@ type Player struct {
 }
 
 type Room struct {
-	Code        string
-	Players     []Player // Players map[string]*Player
-	ActiveRoles []string
-	CurrentUser string
-	Owner       string
+	Code                string
+	Players             []Player // Players map[string]*Player
+	ActiveRoles         []string
+	CurrentUser         string
+	Owner               string
+	CurrentSpeakerIndex int
 }
 
 type Page struct {
@@ -41,13 +42,14 @@ type Client struct {
 }
 
 type SignalingMessage struct {
-	Type      string          `json:"type"`
-	Sender    string          `json:"sender"`
-	Receiver  string          `json:"receiver,omitempty"`
-	Content   string          `json:"content,omitempty"`
-	Sdp       json.RawMessage `json:"sdp,omitempty"`
-	Candidate json.RawMessage `json:"candidate,omitempty"`
-	Name      string          `json:"name,omitempty"`
-	Players   []Player        `json:"players,omitempty"`
-	Me        *Player         `json:"me,omitempty"`
+	Type        string          `json:"type"`
+	Sender      string          `json:"sender"`
+	Receiver    string          `json:"receiver,omitempty"`
+	Content     string          `json:"content,omitempty"`
+	Sdp         json.RawMessage `json:"sdp,omitempty"`
+	Candidate   json.RawMessage `json:"candidate,omitempty"`
+	Name        string          `json:"name,omitempty"`
+	Players     []Player        `json:"players,omitempty"`
+	Me          *Player         `json:"me,omitempty"`
+	SpeakerName string          `json:"speakerName,omitempty"`
 }
