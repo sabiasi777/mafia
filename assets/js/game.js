@@ -425,14 +425,14 @@ window.addEventListener("DOMContentLoaded", async () => {
         const countElement = document.querySelector('.player-count');
         const warning = document.querySelector(".warning");
         if (countElement) countElement.textContent = playerCount;
-        if (warning) warning.style.display = playerCount >= 4 ? "none" : "block";
+        if (warning) warning.style.display = playerCount >= 2 ? "none" : "block";
 
-        const canStart = currentUserName === roomOwner && playerCount >= 4;
+        const canStart = currentUserName === roomOwner && playerCount >= 2;
 
         startButton.disabled = !canStart;
-        startButton.innerHTML = playerCount >= 4 ? 
+        startButton.innerHTML = playerCount >= 2 ? 
             (currentUserName === roomOwner ? '🎮 Start Game' : 'Waiting for owner to start') : 
-            `🎮 Need ${4 - playerCount} more players`; 
+            `🎮 Need ${2 - playerCount} more players`; 
     } 
 
     function getCurrentUserNameFromURL() {

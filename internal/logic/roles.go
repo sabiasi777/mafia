@@ -12,7 +12,7 @@ func AssignRoles(room *models.Room) {
 	roles := []string{}
 
 	switch {
-	case numPlayers == 4:
+	case numPlayers == 2:
 		roles = []string{"Mafia", "Doctor", "Villager", "Villager"}
 	case numPlayers <= 6:
 		roles = []string{"Mafia", "Doctor", "Detective", "Villager", "Villager", "Villager"}
@@ -40,12 +40,12 @@ func AssignRoles(room *models.Room) {
 
 func GetActiveRoles(playerCount int) []string {
 
-	if playerCount < 4 {
+	if playerCount < 2 {
 		return []string{}
 	}
 
 	switch {
-	case playerCount == 4:
+	case playerCount == 2:
 		return []string{"Mafia", "Detective", "Doctor", "Villager"}
 	case playerCount <= 6:
 		return []string{"Mafia", "Detective", "Doctor", "2 Villagers"}
