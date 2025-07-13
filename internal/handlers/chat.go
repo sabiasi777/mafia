@@ -119,6 +119,8 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 
 		if message.Type == "finish-speech" {
 			fmt.Println("message.Type==`finish-speech`")
+			rm.mu.Lock()
+
 			room, ok := rm.Rooms[roomCode]
 			if !ok {
 				rm.mu.Unlock()
