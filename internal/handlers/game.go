@@ -42,6 +42,7 @@ func (rm *RoomManager) StartGame(w http.ResponseWriter, r *http.Request) {
 	logic.AssignRoles(room)
 
 	rm.BroadcastGameStart(roomCode)
+	rm.BroadcastTurnUpdate(roomCode)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Game starting..."))

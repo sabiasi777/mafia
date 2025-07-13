@@ -114,9 +114,11 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 		message.Sender = senderName
 		fmt.Println("message.Receiver:", message.Receiver)
 		fmt.Println("message.Sender:", message.Sender)
+		fmt.Println("message.Type", message.Type)
 		fmt.Println("message:", message)
 
 		if message.Type == "finish-speech" {
+			fmt.Println("message.Type==`finish-speech`")
 			room, ok := rm.Rooms[roomCode]
 			if !ok {
 				rm.mu.Unlock()
@@ -209,6 +211,7 @@ func (rm *RoomManager) BroadcastGameStart(roomCode string) {
 }
 
 func (rm *RoomManager) BroadcastTurnUpdate(roomCode string) {
+	fmt.Println("BroadcastTurnUpdate")
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 

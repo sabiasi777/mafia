@@ -75,6 +75,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             startButton.textContent = "Waiting for owner...";
             startButton.disabled = true;
         }
+
     }
 
     function onSendButtonClick() {
@@ -244,6 +245,10 @@ window.addEventListener("DOMContentLoaded", async () => {
         if (speakerContainer) {
             speakerContainer.classList.add('is-speaking');
         }
+
+        // speaker name might not be equal to currentUserName
+        console.log("speakerName:", speakerName)
+        console.log("currentUserName:", currentUserName)
 
         if (speakerName === currentUserName) {
             finishSpeechButton.style.display = "block";
