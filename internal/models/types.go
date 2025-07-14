@@ -52,4 +52,5 @@ type SignalingMessage struct {
 	Players     []Player        `json:"players,omitempty"`
 	Me          *Player         `json:"me,omitempty"`
 	SpeakerName string          `json:"speakerName,omitempty"`
+	ActiveRoles []string        `json:"activeRoles,omitempty"`
 }

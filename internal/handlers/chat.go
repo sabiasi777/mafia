@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/sabiasi777/mafia/internal/logic"
 	"github.com/sabiasi777/mafia/internal/models"
 )
 
@@ -41,12 +42,18 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 
 	rm.Connections[roomCode][userName] = conn
 
+	fmt.Println("Handle Chaat")
+
+	currentPlayers := rm.getCurrentPlayers(roomCode)
+	playerCount := len(currentPlayers)
+	activeRoles := logic.GetActiveRoles(playerCount)
+
 	for name, clientConn := range rm.Connections[roomCode] {
 		if name != userName {
 			playerListMsg := models.SignalingMessage{
-				Type:    "player-list-update",
-				Players: rm.getCurrentPlayers(roomCode),
-				Name:    userName,
+				Type:        "player-list-update",
+				Players:     rm.getCurrentPlayers(roomCode),
+				ActiveRoles: activeRoles,
 			}
 			listPayLoad, _ := json.Marshal(playerListMsg)
 			clientConn.WriteMessage(websocket.TextMessage, listPayLoad)

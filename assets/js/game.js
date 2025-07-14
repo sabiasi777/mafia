@@ -204,7 +204,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                     break;
                 case "player-list-update":
                     console.log("player-list-update");
-                    updatePlayerListUI(message.players);
+                    updatePlayerListUI(message);
                     break;
                 case "ready-to-connect":
                     if (message.sender !== currentUserName) {
@@ -259,15 +259,19 @@ window.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    function updatePlayerListUI(players) {
+    function updatePlayerListUI(message) {
         const playerList = document.getElementById("playerList");
         const playerCountElement = document.querySelector(".player-count");
+        const roleList = document.getElementById("roleList")
 
         playerList.innerHTML = "";
 
-        console.log("PLAYERS IN UPDATEPLAYERLISTUI:", players);
+        console.log("PLAYERS IN UPDATEPLAYERLISTUI:", message.players);
 
-        players.forEach(player => {
+        roleList.innerHTML = message.activeRoles.map(role =>
+            `<li class="role-item">${role}</li>`).join(''); 
+
+        message.players.forEach(player => {
             const li = document.createElement("li");
             li.className = "player-item active";
             li.textContent = player.name;
@@ -294,8 +298,8 @@ window.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        playerCountElement.textContent = players.length;
-        checkPlayerCount();
+        playerCountElement.textContent = message.players.length;
+        checkPlayerCount(); // pass the known playerCount directly
     }
 
     function createPeerConnection(playerName) {
@@ -437,8 +441,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         startButton.disabled = !canStart;
         startButton.innerHTML = playerCount >= 2 ? 
             (currentUserName === roomOwner ? '🎮 Start Game' : 'Waiting for owner to start') : 
-            `🎮 Need ${2 - playerCount} more players`; 
-    } 
+            `🎮 Need ${2 - playerCount} more players`;
+    }
 
     function getCurrentUserNameFromURL() {
         return new URLSearchParams(window.location.search).get("user");

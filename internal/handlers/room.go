@@ -87,6 +87,7 @@ func (rm *RoomManager) RoomHandler(w http.ResponseWriter, r *http.Request) {
 	room.ActiveRoles = logic.GetActiveRoles(len(room.Players))
 	fmt.Println("Room currentUser:", room.CurrentUser)
 	fmt.Printf("Room Owner: '%s'\n", room.Owner)
+	fmt.Println("ActiveRoles", room.ActiveRoles)
 
 	if err := rm.Tmpl.ExecuteTemplate(w, "game.html", room); err != nil {
 		http.Error(w, "Template error", http.StatusInternalServerError)

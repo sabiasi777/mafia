@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -39,21 +40,26 @@ func AssignRoles(room *models.Room) {
 }
 
 func GetActiveRoles(playerCount int) []string {
+	fmt.Println("PlayerCount in GetActiveRoles:", playerCount)
 
-	if playerCount < 2 {
-		return []string{}
-	}
-
-	switch {
-	case playerCount == 2:
-		return []string{"Mafia", "Detective", "Doctor", "Villager"}
-	case playerCount <= 6:
-		return []string{"Mafia", "Detective", "Doctor", "2 Villagers"}
-	case playerCount <= 8:
-		return []string{"2 Mafia", "Detective", "Doctor", "2 Villagers"}
-	case playerCount <= 10:
-		return []string{"Mafia", "Mafia", "Doctor", "Detective", "Bodyguard", "Villager", "Villager", "Villager", "Villager", "Villager"}
-	default:
+	switch playerCount {
+	case 2:
 		return []string{"Mafia", "Villager"}
+	case 3:
+		return []string{"Mafia", "Doctor", "Villager"}
+	case 4:
+		return []string{"Mafia", "Doctor", "Detective", "Villager"}
+	case 5:
+		return []string{"Mafia", "Doctor", "Detective", "Villager", "Villager"}
+	case 6:
+		return []string{"Mafia", "Doctor", "Detective", "Bodyguard", "Villager", "Villager"}
+	case 7:
+		return []string{"Mafia", "Mafia", "Doctor", "Detective", "Bodyguard", "Villager", "Villager"}
+	case 8:
+		return []string{"Mafia", "Mafia", "Doctor", "Detective", "Bodyguard", "Villager", "Villager", "Villager"}
+	// Add cases for 9, 10, etc., as needed
+
+	default:
+		return []string{}
 	}
 }
