@@ -267,11 +267,17 @@ window.addEventListener("DOMContentLoaded", async () => {
         playerList.innerHTML = "";
 
         console.log("PLAYERS IN UPDATEPLAYERLISTUI:", message.players);
+        console.log("roleList:", roleList)
+        console.log("activeRoles:", message.activeRoles)
 
-        roleList.innerHTML = message.activeRoles.map(role =>
-            `<li class="role-item">${role}</li>`).join(''); 
+        if (roleList && message.activeRoles) {
+            console.log("Changing active roles list")
+            roleList.innerHTML = message.activeRoles.map(role =>
+                `<li class="role-item">${role}</li>`).join('');    
+        }
 
         message.players.forEach(player => {
+            console.log("Changing player list")
             const li = document.createElement("li");
             li.className = "player-item active";
             li.textContent = player.name;

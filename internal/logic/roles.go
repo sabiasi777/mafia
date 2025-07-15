@@ -60,6 +60,6 @@ func GetActiveRoles(playerCount int) []string {
 	// Add cases for 9, 10, etc., as needed
 
 	default:
-		return []string{}
+		return []string{"No roles yet"}
 	}
 }
