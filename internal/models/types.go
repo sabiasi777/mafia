@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -19,6 +20,7 @@ type Room struct {
 	CurrentUser         string
 	Owner               string
 	CurrentSpeakerIndex int
+	TurnTimer           *time.Timer `json:"-"`
 }
 
 type Page struct {
@@ -53,4 +55,5 @@ type SignalingMessage struct {
 	Me          *Player         `json:"me,omitempty"`
 	SpeakerName string          `json:"speakerName,omitempty"`
 	ActiveRoles []string        `json:"activeRoles,omitempty"`
+	TurnTimer   *time.Timer     `json:"turnTimer"`
 }

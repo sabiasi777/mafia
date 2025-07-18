@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/sabiasi777/mafia/internal/logic"
@@ -222,16 +223,40 @@ func (rm *RoomManager) BroadcastGameStart(roomCode string) {
 func (rm *RoomManager) BroadcastTurnUpdate(roomCode string) {
 	fmt.Println("BroadcastTurnUpdate")
 	rm.mu.Lock()
-	defer rm.mu.Unlock()
 
 	room, roomExists := rm.Rooms[roomCode]
 	connections, connectionsExists := rm.Connections[roomCode]
 
 	if !roomExists || !connectionsExists {
+		rm.mu.Unlock()
 		return
 	}
 
+	if room.TurnTimer != nil {
+		room.TurnTimer.Stop()
+	}
+
 	currentSpeaker := room.Players[room.CurrentSpeakerIndex]
+
+	timerFunc := func() {
+		fmt.Printf("Timer expired for %s in room %s. Advancing turn automatically.\n", currentSpeaker.Name, roomCode)
+
+		rm.mu.Lock()
+		if room.Players[room.CurrentSpeakerIndex].Name == currentSpeaker.Name {
+			room.CurrentSpeakerIndex++
+			if room.CurrentSpeakerIndex >= len(room.Players) {
+				room.CurrentSpeakerIndex = 0
+			}
+			rm.mu.Unlock()
+			rm.BroadcastTurnUpdate(roomCode)
+		} else {
+			rm.mu.Unlock()
+		}
+	}
+
+	room.TurnTimer = time.AfterFunc(1*time.Minute, timerFunc)
+
+	rm.mu.Unlock()
 
 	message := models.SignalingMessage{
 		Type:        "turn-update",
@@ -242,5 +267,4 @@ func (rm *RoomManager) BroadcastTurnUpdate(roomCode string) {
 	for _, conn := range connections {
 		conn.WriteMessage(websocket.TextMessage, payload)
 	}
-
 }

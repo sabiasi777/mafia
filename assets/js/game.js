@@ -9,6 +9,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const finishSpeechButton = document.getElementById("finishSpeechButton")
     const gameData = document.getElementById("gameData");
     const startButton = document.getElementById("startButton");
+    const gamePhase = document.querySelector(".game-phase")
     const roomOwner = gameData.dataset.owner;
 
     const peerConnections = {};
@@ -217,7 +218,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                     startGameUI(message.me, message.players);
                     break;
             case "turn-update":
-                    turnUpdate(message.speakerName)
+                turnUpdate(message.speakerName)
                     break;
             }
         };
@@ -234,6 +235,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     function turnUpdate(speakerName) {
         console.log(`It's ${speakerName}'s turn to speak.`);
+        startRealTimeTimer()
 
         const allVideoContainers = document.querySelectorAll('.video-container');
 
@@ -257,6 +259,8 @@ window.addEventListener("DOMContentLoaded", async () => {
             finishSpeechButton.style.display = "none";
             finishSpeechButton.disabled = true;
         }
+
+        
     }
 
     function updatePlayerListUI(message) {
@@ -454,3 +458,24 @@ window.addEventListener("DOMContentLoaded", async () => {
         return new URLSearchParams(window.location.search).get("user");
     }
 });
+
+var timeInterval
+
+function startRealTimeTimer() {
+    const timer = document.querySelector(".timer")
+    var remainingSeconds = 60
+
+    if (timeInterval) {
+        clearInterval(timeInterval);
+    }
+    
+    timeInterval = setInterval(() => {
+        if (remainingSeconds >= 0) {
+            timer.textContent = String(remainingSeconds).padStart(2, '0');
+            remainingSeconds--
+        } else {
+            clearInterval(timeInterval);
+            timer.textContent = "00";
+        }
+    }, 1000);
+}
