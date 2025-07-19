@@ -125,7 +125,8 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 		fmt.Println("message.Type", message.Type)
 		fmt.Println("message:", message)
 
-		if message.Type == "finish-speech" {
+		switch message.Type {
+		case "finish-speeech":
 			fmt.Println("message.Type==`finish-speech`")
 			rm.mu.Lock()
 
@@ -140,6 +141,10 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 
 				if room.CurrentSpeakerIndex >= len(room.Players) {
 					room.CurrentSpeakerIndex = 0
+
+					rm.mu.Unlock()
+					go rm.startNightPhase(roomCode)
+					continue
 				}
 
 				rm.mu.Unlock()
@@ -149,6 +154,41 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			}
 
 			continue
+		case "night-action":
+			fmt.Println("message.Type==`night-action`")
+			rm.mu.Lock()
+
+			room, ok := rm.Rooms[roomCode]
+			if !ok {
+				rm.mu.Unlock()
+				continue
+			}
+
+			var senderRole string
+			for _, p := range room.Players {
+				if p.Name == senderName {
+					senderRole = p.Role
+					break
+				}
+			}
+
+			target := message.Target // Define Target
+			switch senderRole {
+			case "Mafi":
+				room.MafiaTarget = target
+			case "Doctor":
+				room.DoctorSave = target
+			case "Detective":
+				room.DetectiveCheck = target
+				// PRIVATELY tell the detective the result
+				go rm.sendDetectiveResult(roomCode, senderName, target)
+			}
+			room.NightActionsTaken[senderRole] = true
+
+			if rm.areNightActionsComplete(room) {
+				go rm.startDayPhase(roomCode)
+			}
+			rm.mu.Unlock()
 		}
 
 		rm.mu.Lock()
@@ -246,6 +286,8 @@ func (rm *RoomManager) BroadcastTurnUpdate(roomCode string) {
 			room.CurrentSpeakerIndex++
 			if room.CurrentSpeakerIndex >= len(room.Players) {
 				room.CurrentSpeakerIndex = 0
+				room.Day++
+				room.GamePhase = "night"
 			}
 			rm.mu.Unlock()
 			rm.BroadcastTurnUpdate(roomCode)

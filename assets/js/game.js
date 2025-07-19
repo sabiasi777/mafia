@@ -21,6 +21,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         ]
     };
 
+    gamePhase.textContent = "Day Phase"
+
     cameraButton.disabled = true;
     microphoneButton.disabled = true;
 
@@ -28,7 +30,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     var ws;
     var localStream;
-    var currentUserName = getCurrentUserNameFromURL(); 
+    var currentUserName = getCurrentUserNameFromURL();
 
     startButton.addEventListener('click', onStartButtonClick);
     sendButton.addEventListener('click', onSendButtonClick);
@@ -219,7 +221,17 @@ window.addEventListener("DOMContentLoaded", async () => {
                     break;
             case "turn-update":
                 turnUpdate(message.speakerName)
-                    break;
+                break;
+            case "phase-change":
+                if (message.phase === "Night") {
+                    // DO SOMETHING
+                    showNightUI()
+                    gamePhase.textContent = "Night Phase"
+                } else if (message.phase === "Day"){
+                    // DO SOMETHING
+                    gamePhase.textContent = "Day Phase"
+                }
+                break;
             }
         };
 
@@ -231,6 +243,31 @@ window.addEventListener("DOMContentLoaded", async () => {
         ws.onerror = function (error) {
             console.error("WebSocket error:", error);
         };
+    }
+
+    function showNightUI() {
+        if (myRole === "Mafia" || myRole === "Doctor" || myRole === "Detective") {
+            const targetList = document.getElementById('targetList'); // create targetList element
+            targetList.innerHTML = players
+                .filter(p => p.name !== currentUserName && p.isActive)
+                .map(p => `<button class="target-button" data-target="${p.name}">${p.name}</button>`)
+                .join('');
+
+            document.querySelectorAll('.target-button').forEach(button => {
+                button.addEventListener('click', onTargetSelect);
+            });
+        }
+    }
+
+    function onTargetSelect(event) {
+        const targetName = event.target.dataset.target;
+
+        ws.send(JSON.stringify({
+            type: 'night-action',
+            target: targetName
+        }));
+
+        document.getElementById('targetList').innerHTML = `<p>You have made your choice. Waiting...</p>`;
     }
 
     function turnUpdate(speakerName) {

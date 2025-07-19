@@ -21,6 +21,12 @@ type Room struct {
 	Owner               string
 	CurrentSpeakerIndex int
 	TurnTimer           *time.Timer `json:"-"`
+	Day                 int         `json:"day"`
+	GamePhase           string      `json:"gamePhase"`
+	MafiaTarget         string
+	DoctorSave          string
+	DetectiveCheck      string
+	NightActionsTaken   map[string]bool
 }
 
 type Page struct {
@@ -56,4 +62,5 @@ type SignalingMessage struct {
 	SpeakerName string          `json:"speakerName,omitempty"`
 	ActiveRoles []string        `json:"activeRoles,omitempty"`
 	TurnTimer   *time.Timer     `json:"turnTimer"`
+	Phase       string          `json:"phase"`
 }
