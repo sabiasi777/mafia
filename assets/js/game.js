@@ -225,7 +225,8 @@ window.addEventListener("DOMContentLoaded", async () => {
             case "phase-change":
                 if (message.phase === "Night") {
                     // DO SOMETHING
-                    showNightUI()
+                    console.log("showNightUi -> message:", message)
+                    showNightUI(message)
                     gamePhase.textContent = "Night Phase"
                 } else if (message.phase === "Day"){
                     // DO SOMETHING
@@ -245,13 +246,17 @@ window.addEventListener("DOMContentLoaded", async () => {
         };
     }
 
-    function showNightUI() {
+    function showNightUI(message) {
+        const player = message.players.find(player => player.name === currentUserName);
+        const myRole = player.role
         if (myRole === "Mafia" || myRole === "Doctor" || myRole === "Detective") {
-            const targetList = document.getElementById('targetList'); // create targetList element
-            targetList.innerHTML = players
+            const targetListPanel = document.getElementById("targetListPanel")
+            const targetList = document.getElementById('targetList');
+            targetList.innerHTML = message.players
                 .filter(p => p.name !== currentUserName && p.isActive)
                 .map(p => `<button class="target-button" data-target="${p.name}">${p.name}</button>`)
                 .join('');
+            targetListPanel.style.display = "block"
 
             document.querySelectorAll('.target-button').forEach(button => {
                 button.addEventListener('click', onTargetSelect);

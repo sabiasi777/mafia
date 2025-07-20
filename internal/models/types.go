@@ -61,6 +61,8 @@ type SignalingMessage struct {
 	Me          *Player         `json:"me,omitempty"`
 	SpeakerName string          `json:"speakerName,omitempty"`
 	ActiveRoles []string        `json:"activeRoles,omitempty"`
-	TurnTimer   *time.Timer     `json:"turnTimer"`
-	Phase       string          `json:"phase"`
+	TurnTimer   *time.Timer     `json:"turnTimer,omitempty"`
+	Phase       string          `json:"phase,omitempty"`
+	Target      string          `json:"target,omitempty"`
+	Result      string          `json:"result,omitempty"`
 }

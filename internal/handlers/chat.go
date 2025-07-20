@@ -127,7 +127,7 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 		fmt.Println("message:", message)
 
 		switch message.Type {
-		case "finish-speeech":
+		case "finish-speech":
 			fmt.Println("message.Type==`finish-speech`")
 			rm.mu.Lock()
 
@@ -175,13 +175,12 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 
 			target := message.Target
 			switch senderRole {
-			case "Mafi":
+			case "Mafia":
 				room.MafiaTarget = target
 			case "Doctor":
 				room.DoctorSave = target
 			case "Detective":
 				room.DetectiveCheck = target
-				// PRIVATELY tell the detective the result
 				go rm.sendDetectiveResult(roomCode, senderName, target)
 			}
 			room.NightActionsTaken[senderRole] = true
