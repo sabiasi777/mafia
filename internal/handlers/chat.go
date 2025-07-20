@@ -114,6 +114,7 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 		}
 
 		var message models.SignalingMessage
+
 		if err := json.Unmarshal(msg, &message); err != nil {
 			fmt.Println("Error unmarshaling message:", err)
 			continue
@@ -172,7 +173,7 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 				}
 			}
 
-			target := message.Target // Define Target
+			target := message.Target
 			switch senderRole {
 			case "Mafi":
 				room.MafiaTarget = target
