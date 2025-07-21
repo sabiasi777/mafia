@@ -249,11 +249,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     function showNightUI(message) {
         const player = message.players.find(player => player.name === currentUserName);
         const myRole = player.role
+        console.log("MyRole in showNightUI ->", myRole)
         if (myRole === "Mafia" || myRole === "Doctor" || myRole === "Detective") {
             const targetListPanel = document.getElementById("targetListPanel")
             const targetList = document.getElementById('targetList');
+            console.log("Message players in showNightUI ->", message.players)
             targetList.innerHTML = message.players
-                .filter(p => p.name !== currentUserName && p.isActive)
+                .filter(p => p.name !== currentUserName && p.isactive)
                 .map(p => `<button class="target-button" data-target="${p.name}">${p.name}</button>`)
                 .join('');
             targetListPanel.style.display = "block"
