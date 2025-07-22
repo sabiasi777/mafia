@@ -219,18 +219,23 @@ window.addEventListener("DOMContentLoaded", async () => {
                     console.log("game-start");
                     startGameUI(message.me, message.players);
                     break;
-            case "turn-update":
-                turnUpdate(message.speakerName)
-                break;
-            case "phase-change":
-                if (message.phase === "Night") {
-                    console.log("showNightUi -> message:", message)
-                    showNightUI(message)
-                    gamePhase.textContent = "Night Phase"
-                } else if (message.phase === "Day"){
-                    showDayUI()
-                }
-                break;
+                case "turn-update":
+                    turnUpdate(message.speakerName)
+                    break;
+                case "phase-change":
+                    if (message.phase === "Night") {
+                        console.log("showNightUi -> message:", message)
+                        showNightUI(message)
+                        gamePhase.textContent = "Night Phase"
+                    } else if (message.phase === "Day") {
+                        showDayUI()
+                    }
+                    break;
+                case "detective-result":
+                    const messageText = `You investigated ${message.target}. They are: ${message.result}`;
+                    showToast(messageText);
+
+                    break;
             }
         };
 
@@ -242,6 +247,18 @@ window.addEventListener("DOMContentLoaded", async () => {
         ws.onerror = function (error) {
             console.error("WebSocket error:", error);
         };
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById("toastNotification");
+        const toastMessage = document.getElementById("toastMessage");
+
+        toastMessage.textContent = message
+        toast.className = "toast show"
+
+        setTimeout(() => {
+            toast.className = toast.className.replace("show", "");
+        }, 5000);
     }
 
     function showDayUI() {

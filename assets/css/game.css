@@ -88,6 +88,41 @@ header h1 {
     background-clip: text;
     animation: gradientShift 4s ease-in-out infinite;
 }
+
+.toast {
+    visibility: hidden; /* Hidden by default */
+    min-width: 280px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 16px 24px;
+    position: fixed;
+    z-index: 2000; /* Make sure it's on top */
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 40px; 
+    font-size: 1rem;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+}
+
+.toast.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 4.5s;
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 40px; opacity: 1;}
+}
+
+@keyframes fadeout {
+    from {bottom: 40px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}
 @keyframes gradientShift {
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }

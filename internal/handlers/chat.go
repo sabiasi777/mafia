@@ -124,7 +124,6 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 		fmt.Println("message.Receiver:", message.Receiver)
 		fmt.Println("message.Sender:", message.Sender)
 		fmt.Println("message.Type", message.Type)
-		fmt.Println("message:", message)
 
 		switch message.Type {
 		case "finish-speech":
