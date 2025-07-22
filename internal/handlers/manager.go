@@ -158,6 +158,7 @@ func (rm *RoomManager) startDayPhase(roomCode string) {
 	}
 
 	fmt.Println("Starting day phase, broadcasting results.")
+	fmt.Println("These players are still in the game:", room.Players)
 	for _, conn := range connections {
 		conn.WriteMessage(websocket.TextMessage, payload)
 	}

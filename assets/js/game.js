@@ -224,13 +224,11 @@ window.addEventListener("DOMContentLoaded", async () => {
                 break;
             case "phase-change":
                 if (message.phase === "Night") {
-                    // DO SOMETHING
                     console.log("showNightUi -> message:", message)
                     showNightUI(message)
                     gamePhase.textContent = "Night Phase"
                 } else if (message.phase === "Day"){
-                    // DO SOMETHING
-                    gamePhase.textContent = "Day Phase"
+                    showDayUI()
                 }
                 break;
             }
@@ -246,7 +244,19 @@ window.addEventListener("DOMContentLoaded", async () => {
         };
     }
 
+    function showDayUI() {
+        const targetListPanel = document.getElementById("targetListPanel")
+        const targetList = document.getElementById('targetList')
+
+        targetListPanel.style.display = "none"
+        targetList.innerHTML = ""
+        gamePhase.textContent = "Day Phase"
+    }
+
     function showNightUI(message) {
+        if (timeInterval) {
+            clearInterval(timeInterval)
+        }
         const player = message.players.find(player => player.name === currentUserName);
         const myRole = player.role
         console.log("MyRole in showNightUI ->", myRole)
