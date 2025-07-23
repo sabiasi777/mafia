@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mafia Game</title>
     <link rel="stylesheet" href="../assets/css/game.css">
     <script src="/assets/js/game.js" defer></script>
 </head>
+
 <body>
     <div id="gameData" data-owner="{{.Owner}}"></div>
-    
+
     <a href="/" class="home-link">← Mafia</a>
-    
+
     <div class="container">
         <div id="gameScreen" class="game-card">
             <header>
@@ -23,32 +25,32 @@
                     <h2>Players <span class="player-count">{{len .Players}}</span></h2>
                     <ul class="player-list" id="playerList">
                         {{range .Players}}
-                            <li class="player-item {{if .IsActive}}active{{end}}">{{.Name}}</li>
+                        <li class="player-item {{if .IsActive}}active{{end}}">{{.Name}}</li>
                         {{end}}
                     </ul>
                 </div>
 
                 {{ if .ActiveRoles }}
-                    <div class="info-section">
-                        <h2>Active Roles</h2>
-                        <ul class="role-list" id="roleList">
-                            {{range .ActiveRoles}}
-                                <li class="role-item">{{.}}</li>
-                            {{end}}
-                        </ul>
-                    </div>
+                <div class="info-section">
+                    <h2>Active Roles</h2>
+                    <ul class="role-list" id="roleList">
+                        {{range .ActiveRoles}}
+                        <li class="role-item">{{.}}</li>
+                        {{end}}
+                    </ul>
+                </div>
                 {{ else }}
-                    <div class="warning">
-                        ⚠️ Not enough players to start the game. Minimum: 4
-                    </div>
+                <div class="warning">
+                    ⚠️ Not enough players to start the game. Minimum: 4
+                </div>
                 {{ end }}
             </div>
 
             <button class="start-button" id="startButton" type="button" disabled>
                 {{if eq .CurrentUser .Owner}}
-                    🎮 Start Game
+                🎮 Start Game
                 {{else}}
-                    Waiting for owner to start
+                Waiting for owner to start
                 {{end}}
             </button>
 
@@ -60,6 +62,10 @@
 
     <div id="roleContainer" class="role-reveal">
         <div class="role-text" id="roleText"></div>
+    </div>
+
+    <div id="dayAnnouncement" class="day-announcement">
+        <div id="dayAnnouncementText" class="day-announcement-text"></div>
     </div>
 
     <div id="gameArea" class="game-area">
@@ -130,4 +136,5 @@
     </div>
 
 </body>
+
 </html>

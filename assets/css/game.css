@@ -312,6 +312,44 @@ header h1 {
     100% { text-shadow: 0 0 40px rgba(255, 107, 107, 0.5), 0 0 60px rgba(78, 205, 196, 0.3); }
 }
 
+/* DAY ANNOUNCEMENT STYLES */
+.day-announcement {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(12, 12, 12, 0.8);
+    backdrop-filter: blur(10px);
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.day-announcement.show {
+    display: flex;
+    opacity: 1;
+}
+
+.day-announcement-text {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 700;
+    color: #ff6b6b; /* A blood-red color for the announcement */
+    text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+}
+
+/* Add an icon before the text */
+.day-announcement-text::before {
+    content: '☠️';
+    display: block;
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
 /* GAME AREA - NEW VIDEO-FOCUSED LAYOUT */
 .game-area {
     position: fixed;
@@ -366,6 +404,11 @@ header h1 {
     border-color: #4ecdc4;
     box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2), 0 15px 40px rgba(0, 0, 0, 0.4);
     animation: speakingPulse 1.5s ease-in-out infinite;
+}
+
+.video-container.dead {
+    filter: grayscale(100%) brightness(0.5);
+    opacity: 0.6;
 }
 
 @keyframes speakingPulse {

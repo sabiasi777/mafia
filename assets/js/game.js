@@ -228,7 +228,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                         showNightUI(message)
                         gamePhase.textContent = "Night Phase"
                     } else if (message.phase === "Day") {
-                        showDayUI()
+                        showDayUI(message)
                     }
                     break;
                 case "detective-result":
@@ -261,9 +261,31 @@ window.addEventListener("DOMContentLoaded", async () => {
         }, 5000);
     }
 
-    function showDayUI() {
+    function updateVideoGrid(players) {
+        players.forEach(player => {
+            const playerContainer = document.querySelector(`.video-container[data-player-name="${player.name}"]`);
+            if (playerContainer) {
+                if (!player.isactive) {
+                    playerContainer.classList.add('dead');
+                }
+            }
+        });
+    }
+
+    function showDayUI(message) {
         const targetListPanel = document.getElementById("targetListPanel")
         const targetList = document.getElementById('targetList')
+        const announcement = document.getElementById("dayAnnouncement")
+        const announcementText = document.getElementById("dayAnnouncementText")
+
+        announcementText.textContent = message.result;
+        announcement.classList.add('show');
+
+        setTimeout(() => {
+            announcement.classList.remove('show');
+        }, 5000);
+
+        updateVideoGrid(message.players); 
 
         targetListPanel.style.display = "none"
         targetList.innerHTML = ""
@@ -302,6 +324,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         }));
 
         document.getElementById('targetList').innerHTML = `<p>You have made your choice. Waiting...</p>`;
+        
     }
 
     function turnUpdate(speakerName) {
