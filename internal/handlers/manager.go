@@ -163,5 +163,68 @@ func (rm *RoomManager) startDayPhase(roomCode string) {
 		conn.WriteMessage(websocket.TextMessage, payload)
 	}
 
+	go rm.checkWinCondition(roomCode)
 	go rm.BroadcastTurnUpdate(roomCode)
+}
+
+func (rm *RoomManager) checkWinCondition(roomCode string) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	room, ok := rm.Rooms[roomCode]
+	if !ok {
+		return
+	}
+
+	if room.GamePhase == "" {
+		return
+	}
+
+	mafiaCount := 0
+	townCount := 0
+
+	for _, player := range room.Players {
+		if player.IsActive {
+			if player.Role == "Mafia" {
+				mafiaCount++
+			} else {
+				townCount++
+			}
+		}
+	}
+
+	winner := ""
+	if mafiaCount == 0 {
+		winner = "Town"
+	} else if mafiaCount >= townCount {
+		winner = "Mafia"
+	}
+
+	if winner != "" {
+		fmt.Printf("Game over in room %s. Winner: %s\n", roomCode, winner)
+		go rm.broadcastGameOver(roomCode, winner)
+	}
+}
+
+func (rm *RoomManager) broadcastGameOver(roomCode string, winner string) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	connections, ok := rm.Connections[roomCode]
+	if !ok {
+		return
+	}
+
+	finalPlayerList := rm.Rooms[roomCode].Players
+
+	gameOverMsg := models.SignalingMessage{
+		Type:    "game-over",
+		Winner:  winner,
+		Players: finalPlayerList,
+	}
+	payload, _ := json.Marshal(gameOverMsg)
+
+	for _, conn := range connections {
+		conn.WriteMessage(websocket.TextMessage, payload)
+	}
 }

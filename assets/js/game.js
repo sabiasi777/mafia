@@ -240,6 +240,9 @@ window.addEventListener("DOMContentLoaded", async () => {
                     showToast(messageText);
 
                     break;
+                case "game-over":
+                    showGameOverScreen(message)
+                    break;
             }
         };
 
@@ -251,6 +254,20 @@ window.addEventListener("DOMContentLoaded", async () => {
         ws.onerror = function (error) {
             console.error("WebSocket error:", error);
         };
+    }
+
+    function showGameOverScreen(message) {
+        const gameOverScreen = document.getElementById('gameOverScreen')
+        const winnerText = document.getElementById('winnerText')
+        const finalRoleList = document.getElementById('finalRoleList')
+
+        winnerText.textContent = `The ${message.winner} Wins!`
+
+        finalRoleList.innerHTML = message.players
+            .map(p => `<li><strong>${p.name}:</strong> ${p.role}</li>`)
+            .join('')
+
+        gameOverScreen.classList.add('show')
     }
 
     function showToast(message) {

@@ -65,4 +65,5 @@ type SignalingMessage struct {
 	Phase       string          `json:"phase,omitempty"`
 	Target      string          `json:"target,omitempty"`
 	Result      string          `json:"result,omitempty"`
+	Winner      string          `json:"winner,omitempty"`
 }
