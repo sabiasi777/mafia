@@ -149,6 +149,10 @@ window.addEventListener("DOMContentLoaded", async () => {
         setTimeout(async () => {
             roleContainer.style.display = "none";
             gameArea.style.display = "grid";
+
+            if (currentUserName === roomOwner) {
+                ws.send(JSON.stringify({ type: "begin-first-turn" }));
+            }
         }, 3000);
     }
 
@@ -329,8 +333,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     function turnUpdate(speakerName) {
         console.log(`It's ${speakerName}'s turn to speak.`);
-        startRealTimeTimer()
-
         const allVideoContainers = document.querySelectorAll('.video-container');
 
         allVideoContainers.forEach(container => {
@@ -347,14 +349,28 @@ window.addEventListener("DOMContentLoaded", async () => {
         console.log("currentUserName:", currentUserName)
 
         if (speakerName === currentUserName) {
+            showTurnAnnouncement()
             finishSpeechButton.style.display = "block";
             finishSpeechButton.disabled = false;
+            startRealTimeTimer()
         } else {
             finishSpeechButton.style.display = "none";
             finishSpeechButton.disabled = true;
         }
 
         
+    }
+
+    function showTurnAnnouncement() {
+        const announcement = document.getElementById('turnAnnouncement');
+        const announcementText = document.getElementById('turnAnnouncementText');
+
+        announcementText.textContent = "It's Your Turn!";
+        announcement.classList.add('show');
+
+        setTimeout(() => {
+            announcement.classList.remove('show');
+        }, 3000);
     }
 
     function updatePlayerListUI(message) {

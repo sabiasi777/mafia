@@ -188,6 +188,17 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 				go rm.startDayPhase(roomCode)
 			}
 			rm.mu.Unlock()
+		case "begin-first-turn":
+			rm.mu.Lock()
+			room, ok := rm.Rooms[roomCode]
+			if ok && senderName == room.Owner {
+				fmt.Println("Beginning first turn for room:", roomCode)
+				rm.mu.Unlock()
+				go rm.BroadcastTurnUpdate(roomCode)
+			} else {
+				rm.mu.Unlock()
+			}
+			continue
 		}
 
 		rm.mu.Lock()

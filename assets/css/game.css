@@ -350,6 +350,37 @@ header h1 {
     margin-bottom: 20px;
 }
 
+/* TURN ANNOUNCEMENT STYLES */
+.turn-announcement {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(12, 12, 12, 0.8);
+    backdrop-filter: blur(10px);
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.turn-announcement.show {
+    display: flex;
+    opacity: 1;
+}
+
+.turn-announcement-text {
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 700;
+    /* Using the teal color from your theme */
+    color: #4ecdc4; 
+    text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+}
+
 /* GAME AREA - NEW VIDEO-FOCUSED LAYOUT */
 .game-area {
     position: fixed;
