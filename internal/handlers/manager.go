@@ -136,7 +136,7 @@ func (rm *RoomManager) areNightActionsComplete(room *models.Room) bool {
 	for _, role := range requiredRoles {
 		isRoleInGame := false
 		for _, player := range room.Players {
-			if player.Role == role {
+			if player.Role == role && player.IsActive {
 				isRoleInGame = true
 				break
 			}
@@ -268,6 +268,7 @@ func (rm *RoomManager) broadcastGameOver(roomCode string, winner string) {
 	payload, _ := json.Marshal(gameOverMsg)
 
 	for _, conn := range connections {
+		fmt.Println("Sending game-over message")
 		conn.WriteMessage(websocket.TextMessage, payload)
 	}
 }

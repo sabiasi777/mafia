@@ -241,6 +241,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
                     break;
                 case "game-over":
+                    console.log("game-over message has been received")
                     showGameOverScreen(message)
                     break;
             }
@@ -264,6 +265,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         const gameOverScreen = document.getElementById('gameOverScreen')
         const winnerText = document.getElementById('winnerText')
         const finalRoleList = document.getElementById('finalRoleList')
+
+        console.log("showGameOverScreen")
 
         winnerText.textContent = `The ${message.winner} Wins!`
 
