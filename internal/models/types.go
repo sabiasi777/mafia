@@ -50,20 +50,21 @@ type Client struct {
 }
 
 type SignalingMessage struct {
-	Type        string          `json:"type"`
-	Sender      string          `json:"sender"`
-	Receiver    string          `json:"receiver,omitempty"`
-	Content     string          `json:"content,omitempty"`
-	Sdp         json.RawMessage `json:"sdp,omitempty"`
-	Candidate   json.RawMessage `json:"candidate,omitempty"`
-	Name        string          `json:"name,omitempty"`
-	Players     []Player        `json:"players,omitempty"`
-	Me          *Player         `json:"me,omitempty"`
-	SpeakerName string          `json:"speakerName,omitempty"`
-	ActiveRoles []string        `json:"activeRoles,omitempty"`
-	TurnTimer   *time.Timer     `json:"turnTimer,omitempty"`
-	Phase       string          `json:"phase,omitempty"`
-	Target      string          `json:"target,omitempty"`
-	Result      string          `json:"result,omitempty"`
-	Winner      string          `json:"winner,omitempty"`
+	Type         string          `json:"type"`
+	Sender       string          `json:"sender"`
+	Receiver     string          `json:"receiver,omitempty"`
+	Content      string          `json:"content,omitempty"`
+	Sdp          json.RawMessage `json:"sdp,omitempty"`
+	Candidate    json.RawMessage `json:"candidate,omitempty"`
+	Name         string          `json:"name,omitempty"`
+	Players      []Player        `json:"players,omitempty"`
+	Me           *Player         `json:"me,omitempty"`
+	SpeakerName  string          `json:"speakerName,omitempty"`
+	ActiveRoles  []string        `json:"activeRoles,omitempty"`
+	TurnTimer    *time.Timer     `json:"turnTimer,omitempty"`
+	Phase        string          `json:"phase,omitempty"`
+	Target       string          `json:"target,omitempty"`
+	Result       string          `json:"result,omitempty"`
+	Winner       string          `json:"winner,omitempty"`
+	ValidTargets []Player        `json:"validTargets,omitempty"`
 }

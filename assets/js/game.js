@@ -257,6 +257,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     function showGameOverScreen(message) {
+        if (timeInterval) {
+            clearInterval(timeInterval);
+        }
+        
         const gameOverScreen = document.getElementById('gameOverScreen')
         const winnerText = document.getElementById('winnerText')
         const finalRoleList = document.getElementById('finalRoleList')
@@ -268,6 +272,10 @@ window.addEventListener("DOMContentLoaded", async () => {
             .join('')
 
         gameOverScreen.classList.add('show')
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 5000)
     }
 
     function showToast(message) {
@@ -299,11 +307,16 @@ window.addEventListener("DOMContentLoaded", async () => {
         const announcement = document.getElementById("dayAnnouncement")
         const announcementText = document.getElementById("dayAnnouncementText")
 
+        document.getElementById('targetListPanel').style.display = 'none';
         announcementText.textContent = message.result;
         announcement.classList.add('show');
 
         setTimeout(() => {
             announcement.classList.remove('show');
+
+            if (currentUserName === roomOwner) {
+                ws.send(JSON.stringify({ type: "request-next-turn" }))
+            }
         }, 5000);
 
         updateVideoGrid(message.players); 
@@ -317,23 +330,24 @@ window.addEventListener("DOMContentLoaded", async () => {
         if (timeInterval) {
             clearInterval(timeInterval)
         }
-        const player = message.players.find(player => player.name === currentUserName);
-        const myRole = player.role
-        console.log("MyRole in showNightUI ->", myRole)
-        if (myRole === "Mafia" || myRole === "Doctor" || myRole === "Detective") {
-            const targetListPanel = document.getElementById("targetListPanel")
+        document.getElementById('finishSpeechButton').style.display = 'none';
+
+        const targets = message.validTargets
+
+        if (targets && targets.length > 0) {
+            const targetListPanel = document.getElementById("targetListPanel");
             const targetList = document.getElementById('targetList');
-            console.log("Message players in showNightUI ->", message.players)
-            targetList.innerHTML = message.players
-                .filter(p => p.name !== currentUserName && p.isactive)
+
+            targetList.innerHTML = targets
                 .map(p => `<button class="target-button" data-target="${p.name}">${p.name}</button>`)
                 .join('');
-            targetListPanel.style.display = "block"
+
+            targetListPanel.style.display = "block";
 
             document.querySelectorAll('.target-button').forEach(button => {
                 button.addEventListener('click', onTargetSelect);
             });
-        }
+        }        
     }
 
     function onTargetSelect(event) {
@@ -352,6 +366,12 @@ window.addEventListener("DOMContentLoaded", async () => {
         console.log(`It's ${speakerName}'s turn to speak.`);
         const allVideoContainers = document.querySelectorAll('.video-container');
 
+        if (timeInterval) {
+            clearInterval(timeInterval);
+        }
+
+        startRealTimeTimer()
+
         allVideoContainers.forEach(container => {
             container.classList.remove('is-speaking');
         });
@@ -369,13 +389,10 @@ window.addEventListener("DOMContentLoaded", async () => {
             showTurnAnnouncement()
             finishSpeechButton.style.display = "block";
             finishSpeechButton.disabled = false;
-            startRealTimeTimer()
         } else {
             finishSpeechButton.style.display = "none";
             finishSpeechButton.disabled = true;
-        }
-
-        
+        }        
     }
 
     function showTurnAnnouncement() {
@@ -591,10 +608,6 @@ var timeInterval
 function startRealTimeTimer() {
     const timer = document.querySelector(".timer")
     var remainingSeconds = 60
-
-    if (timeInterval) {
-        clearInterval(timeInterval);
-    }
     
     timeInterval = setInterval(() => {
         if (remainingSeconds >= 0) {

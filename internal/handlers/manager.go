@@ -25,6 +25,20 @@ func NewRoomManager() *RoomManager {
 	}
 }
 
+func (rm *RoomManager) getLivePlayers(roomCode string) []models.Player {
+	livePlayers := []models.Player{}
+
+	if room, ok := rm.Rooms[roomCode]; ok {
+		for _, player := range room.Players {
+			if player.IsActive {
+				livePlayers = append(livePlayers, player)
+			}
+		}
+	}
+
+	return livePlayers
+}
+
 func (rm *RoomManager) startNightPhase(roomCode string) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
@@ -41,15 +55,37 @@ func (rm *RoomManager) startNightPhase(roomCode string) {
 	room.DetectiveCheck = ""
 	room.NightActionsTaken = make(map[string]bool)
 
-	phaseChangeMsg := models.SignalingMessage{
-		Type:    "phase-change",
-		Phase:   "Night",
-		Players: rm.getCurrentPlayers(roomCode),
-	}
-	payload, _ := json.Marshal(phaseChangeMsg)
+	allActivePlayers := rm.getLivePlayers(roomCode)
 
-	for _, conn := range rm.Connections[roomCode] {
-		conn.WriteMessage(websocket.TextMessage, payload)
+	for _, player := range room.Players {
+		if !player.IsActive {
+			continue
+		}
+
+		validTargets := []models.Player{}
+		switch player.Role {
+		case "Mafia":
+			for _, p := range allActivePlayers {
+				if p.Role != "Mafia" {
+					validTargets = append(validTargets, p)
+				}
+			}
+		case "Doctor", "Detective":
+			for _, p := range allActivePlayers {
+				if p.Name != player.Name {
+					validTargets = append(validTargets, p)
+				}
+			}
+		}
+		if conn, ok := rm.Connections[roomCode][player.Name]; ok {
+			phaseChangeMsg := models.SignalingMessage{
+				Type:         "phase-change",
+				Phase:        "Night",
+				ValidTargets: validTargets,
+			}
+			payload, _ := json.Marshal(phaseChangeMsg)
+			conn.WriteMessage(websocket.TextMessage, payload)
+		}
 	}
 }
 
@@ -164,20 +200,19 @@ func (rm *RoomManager) startDayPhase(roomCode string) {
 	}
 
 	go rm.checkWinCondition(roomCode)
-	go rm.BroadcastTurnUpdate(roomCode)
 }
 
-func (rm *RoomManager) checkWinCondition(roomCode string) {
+func (rm *RoomManager) checkWinCondition(roomCode string) bool {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
 	room, ok := rm.Rooms[roomCode]
 	if !ok {
-		return
+		return false
 	}
 
 	if room.GamePhase == "" {
-		return
+		return false
 	}
 
 	mafiaCount := 0
@@ -202,8 +237,16 @@ func (rm *RoomManager) checkWinCondition(roomCode string) {
 
 	if winner != "" {
 		fmt.Printf("Game over in room %s. Winner: %s\n", roomCode, winner)
-		go rm.broadcastGameOver(roomCode, winner)
+
+		if room.TurnTimer != nil {
+			room.TurnTimer.Stop()
+		}
+		rm.broadcastGameOver(roomCode, winner)
+		rm.resetRoomForNewGame(room)
+		//go rm.broadcastPlayerListUpdate(roomCode)
+		return true
 	}
+	return false
 }
 
 func (rm *RoomManager) broadcastGameOver(roomCode string, winner string) {
@@ -226,5 +269,19 @@ func (rm *RoomManager) broadcastGameOver(roomCode string, winner string) {
 
 	for _, conn := range connections {
 		conn.WriteMessage(websocket.TextMessage, payload)
+	}
+}
+
+func (rm *RoomManager) resetRoomForNewGame(room *models.Room) {
+	room.GamePhase = "Lobby"
+	room.CurrentSpeakerIndex = 0
+	room.MafiaTarget = ""
+	room.DoctorSave = ""
+	room.DetectiveCheck = ""
+	room.NightActionsTaken = nil
+
+	for i := range room.Players {
+		room.Players[i].Role = ""
+		room.Players[i].IsActive = true
 	}
 }

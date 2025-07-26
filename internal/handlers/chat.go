@@ -199,6 +199,16 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 				rm.mu.Unlock()
 			}
 			continue
+		case "request-next-turn":
+			rm.mu.Lock()
+			room, ok := rm.Rooms[roomCode]
+			if ok && senderName == room.Owner {
+				rm.mu.Unlock()
+				go rm.BroadcastTurnUpdate(roomCode)
+			} else {
+				rm.mu.Unlock()
+			}
+			continue
 		}
 
 		rm.mu.Lock()
