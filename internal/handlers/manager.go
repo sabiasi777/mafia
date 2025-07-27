@@ -239,20 +239,18 @@ func (rm *RoomManager) checkWinCondition(roomCode string) bool {
 		fmt.Printf("Game over in room %s. Winner: %s\n", roomCode, winner)
 
 		if room.TurnTimer != nil {
+			fmt.Println("room.TurnTimer.Stop()")
 			room.TurnTimer.Stop()
 		}
+		fmt.Println("broadcasting Game Over")
 		rm.broadcastGameOver(roomCode, winner)
 		rm.resetRoomForNewGame(room)
-		//go rm.broadcastPlayerListUpdate(roomCode)
 		return true
 	}
 	return false
 }
 
 func (rm *RoomManager) broadcastGameOver(roomCode string, winner string) {
-	rm.mu.Lock()
-	defer rm.mu.Unlock()
-
 	connections, ok := rm.Connections[roomCode]
 	if !ok {
 		return

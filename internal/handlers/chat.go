@@ -190,8 +190,8 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			rm.mu.Unlock()
 		case "begin-first-turn":
 			rm.mu.Lock()
-			room, ok := rm.Rooms[roomCode]
-			if ok && senderName == room.Owner {
+			_, ok := rm.Rooms[roomCode]
+			if ok {
 				fmt.Println("Beginning first turn for room:", roomCode)
 				rm.mu.Unlock()
 				go rm.BroadcastTurnUpdate(roomCode)
