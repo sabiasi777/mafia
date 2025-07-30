@@ -302,18 +302,27 @@ func (rm *RoomManager) BroadcastTurnUpdate(roomCode string) {
 		fmt.Printf("Timer expired for %s in room %s. Advancing turn automatically.\n", currentSpeaker.Name, roomCode)
 
 		rm.mu.Lock()
-		if room.Players[room.CurrentSpeakerIndex].Name == currentSpeaker.Name {
-			room.CurrentSpeakerIndex++
-			if room.CurrentSpeakerIndex >= len(room.Players) {
-				room.CurrentSpeakerIndex = 0
-				room.Day++
-				room.GamePhase = "night"
-			}
-			rm.mu.Unlock()
-			rm.BroadcastTurnUpdate(roomCode)
-		} else {
-			rm.mu.Unlock()
+		defer rm.mu.Unlock()
+
+		room, ok := rm.Rooms[roomCode]
+		if !ok {
+			fmt.Printf("Timer fired for a room that no longer exists: %s\n", roomCode)
+			return
 		}
+
+		if len(room.Players) == 0 || room.Players[room.CurrentSpeakerIndex].Name == currentSpeaker.Name {
+			fmt.Printf("Timer for %s is stale, turn has already advanced.\n", currentSpeaker.Name)
+			return
+		}
+
+		room.CurrentSpeakerIndex = rm.findNextActivePlayer(room)
+
+		if rm.isSpeakingRoundOver(room) {
+			go rm.startNightPhase(roomCode)
+		} else {
+			go rm.BroadcastTurnUpdate(roomCode)
+		}
+
 	}
 
 	room.TurnTimer = time.AfterFunc(1*time.Minute, timerFunc)

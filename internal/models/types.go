@@ -27,6 +27,7 @@ type Room struct {
 	DoctorSave          string
 	DetectiveCheck      string
 	NightActionsTaken   map[string]bool
+	SpeakersThisRound   map[string]bool
 }
 
 type Page struct {

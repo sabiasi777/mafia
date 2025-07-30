@@ -171,7 +171,6 @@ func (rm *RoomManager) startDayPhase(roomCode string) {
 		resultMessage = fmt.Sprintf("%s was eliminated last night.", eliminatedPlayerName)
 	}
 
-	room.GamePhase = "Day"
 	if eliminatedPlayerName != "" {
 		for i := range room.Players {
 			if room.Players[i].Name == eliminatedPlayerName {
@@ -283,4 +282,36 @@ func (rm *RoomManager) resetRoomForNewGame(room *models.Room) {
 		room.Players[i].Role = ""
 		room.Players[i].IsActive = true
 	}
+}
+
+func (rm *RoomManager) findNextActivePlayer(room *models.Room) int {
+	currentIndex := room.CurrentSpeakerIndex
+	numPlayers := len(room.Players)
+
+	if numPlayers == 0 {
+		return -1
+	}
+
+	for i := 1; i <= numPlayers; i++ {
+		nextIndex := (currentIndex + i) % numPlayers
+
+		if room.Players[nextIndex].IsActive {
+			return nextIndex
+		}
+	}
+
+	return -1
+}
+
+func (rm *RoomManager) isSpeakingRoundOver(room *models.Room) bool {
+	activePlayerCount := 0
+	for _, player := range room.Players {
+		if player.IsActive {
+			activePlayerCount++
+		}
+	}
+
+	speakersCount := len(room.SpeakersThisRound)
+	return speakersCount >= activePlayerCount
+
 }

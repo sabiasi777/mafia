@@ -411,15 +411,15 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     function updatePlayerListUI(message) {
+        console.log("Full message received by updatePlayerListUI:", message);
+
         const playerList = document.getElementById("playerList");
         const playerCountElement = document.querySelector(".player-count");
         const roleList = document.getElementById("roleList")
 
         playerList.innerHTML = "";
-
-        console.log("PLAYERS IN UPDATEPLAYERLISTUI:", message.players);
+        
         console.log("roleList:", roleList)
-        console.log("activeRoles:", message.activeRoles)
 
         if (roleList && message.activeRoles) {
             console.log("Changing active roles list")
