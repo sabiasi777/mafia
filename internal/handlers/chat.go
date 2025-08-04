@@ -137,6 +137,8 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			}
 
 			if senderName == room.Players[room.CurrentSpeakerIndex].Name {
+				fmt.Println("senderName is equal to the current speaker")
+
 				finishedSpeaker := room.Players[room.CurrentSpeakerIndex].Name
 				room.SpeakersThisRound[finishedSpeaker] = true
 
@@ -148,6 +150,7 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 				}
 
 				room.CurrentSpeakerIndex = rm.findNextActivePlayer(room)
+				fmt.Println("found next active player:", room.CurrentSpeakerIndex)
 
 				rm.mu.Unlock()
 				go rm.BroadcastTurnUpdate(roomCode)
@@ -192,9 +195,12 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			rm.mu.Unlock()
 		case "begin-first-turn":
 			rm.mu.Lock()
-			_, ok := rm.Rooms[roomCode]
-			if ok {
+			room, ok := rm.Rooms[roomCode]
+			if ok && senderName == room.Owner {
 				fmt.Println("Beginning first turn for room:", roomCode)
+
+				room.SpeakersThisRound = make(map[string]bool)
+
 				rm.mu.Unlock()
 				go rm.BroadcastTurnUpdate(roomCode)
 			} else {

@@ -285,6 +285,7 @@ func (rm *RoomManager) resetRoomForNewGame(room *models.Room) {
 }
 
 func (rm *RoomManager) findNextActivePlayer(room *models.Room) int {
+	fmt.Println("function findnextactiveplayer")
 	currentIndex := room.CurrentSpeakerIndex
 	numPlayers := len(room.Players)
 
@@ -296,6 +297,7 @@ func (rm *RoomManager) findNextActivePlayer(room *models.Room) int {
 		nextIndex := (currentIndex + i) % numPlayers
 
 		if room.Players[nextIndex].IsActive {
+			fmt.Println("next active player index", nextIndex)
 			return nextIndex
 		}
 	}
@@ -304,6 +306,7 @@ func (rm *RoomManager) findNextActivePlayer(room *models.Room) int {
 }
 
 func (rm *RoomManager) isSpeakingRoundOver(room *models.Room) bool {
+	fmt.Println("function isspeakingroundover")
 	activePlayerCount := 0
 	for _, player := range room.Players {
 		if player.IsActive {
@@ -313,5 +316,4 @@ func (rm *RoomManager) isSpeakingRoundOver(room *models.Room) bool {
 
 	speakersCount := len(room.SpeakersThisRound)
 	return speakersCount >= activePlayerCount
-
 }
