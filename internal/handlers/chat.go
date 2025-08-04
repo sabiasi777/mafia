@@ -137,15 +137,17 @@ func (rm *RoomManager) handleConnection(conn *websocket.Conn, roomCode string, s
 			}
 
 			if senderName == room.Players[room.CurrentSpeakerIndex].Name {
-				room.CurrentSpeakerIndex++
+				finishedSpeaker := room.Players[room.CurrentSpeakerIndex].Name
+				room.SpeakersThisRound[finishedSpeaker] = true
 
-				if room.CurrentSpeakerIndex >= len(room.Players) {
-					room.CurrentSpeakerIndex = 0
-
+				if rm.isSpeakingRoundOver(room) {
+					fmt.Println("Speaking round is over. Starting night phase")
 					rm.mu.Unlock()
 					go rm.startNightPhase(roomCode)
 					continue
 				}
+
+				room.CurrentSpeakerIndex = rm.findNextActivePlayer(room)
 
 				rm.mu.Unlock()
 				go rm.BroadcastTurnUpdate(roomCode)
