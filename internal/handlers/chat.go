@@ -37,10 +37,18 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rm.mu.Lock()
+	if room, ok := rm.Rooms[roomCode]; ok {
+		for i := range room.Players {
+			if room.Players[i].Name == userName {
+				room.Players[i].IsActive = true
+				break
+			}
+		}
+	}
+
 	if rm.Connections[roomCode] == nil {
 		rm.Connections[roomCode] = make(map[string]*websocket.Conn)
 	}
-
 	rm.Connections[roomCode][userName] = conn
 
 	fmt.Println("Handle Chaat")
@@ -49,32 +57,34 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 	playerCount := len(currentPlayers)
 	activeRoles := logic.GetActiveRoles(playerCount)
 
-	for name, clientConn := range rm.Connections[roomCode] {
-		if name != userName {
-			playerListMsg := models.SignalingMessage{
-				Type:        "player-list-update",
-				Players:     rm.getCurrentPlayers(roomCode),
-				ActiveRoles: activeRoles,
-			}
-			listPayLoad, _ := json.Marshal(playerListMsg)
-			clientConn.WriteMessage(websocket.TextMessage, listPayLoad)
-		}
+	playerListMsg := models.SignalingMessage{
+		Type:        "player-list-update",
+		Players:     currentPlayers,
+		ActiveRoles: activeRoles,
+	}
+	listPayLoad, _ := json.Marshal(playerListMsg)
+
+	for _, clientConn := range rm.Connections[roomCode] {
+		clientConn.WriteMessage(websocket.TextMessage, listPayLoad)
 	}
 	rm.mu.Unlock()
 
 	defer func() {
 		rm.mu.Lock()
+		defer rm.mu.Unlock()
 
 		if room, exists := rm.Connections[roomCode]; exists {
 			delete(room, userName)
-			players := rm.Rooms[roomCode].Players
 
-			for i, player := range players {
-				if player.Name == userName {
-					rm.Rooms[roomCode].Players = append(players[:i], players[i+1:]...)
-					break
+			if gameRoom, ok := rm.Rooms[roomCode]; ok {
+				for i := range gameRoom.Players {
+					if gameRoom.Players[i].Name == userName {
+						gameRoom.Players[i].IsActive = false
+						break
+					}
 				}
 			}
+
 			if len(room) == 0 {
 				delete(rm.Connections, roomCode)
 				fmt.Printf("Room '%s' is now empty and closed.\n", roomCode)
@@ -83,10 +93,14 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("%s left the room: %v\n", userName, room)
 			fmt.Println("getting current players", rm.getCurrentPlayers(roomCode))
 
+			updatedPlayers := rm.getCurrentPlayers(roomCode)
+			updatedRoles := logic.GetActiveRoles(len(updatedPlayers))
+
 			leaveMsg := models.SignalingMessage{
-				Type:    "player-list-update",
-				Name:    userName,
-				Players: rm.getCurrentPlayers(roomCode),
+				Type:        "player-list-update",
+				Name:        userName,
+				Players:     updatedPlayers,
+				ActiveRoles: updatedRoles,
 			}
 			payload, _ := json.Marshal(leaveMsg)
 
@@ -94,7 +108,6 @@ func (rm *RoomManager) HandleChat(w http.ResponseWriter, r *http.Request) {
 				clientConn.WriteMessage(websocket.TextMessage, payload)
 			}
 		}
-		rm.mu.Unlock()
 		conn.Close()
 		fmt.Printf("Connection for user '%s' closed.\n", userName)
 	}()
