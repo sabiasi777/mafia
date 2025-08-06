@@ -180,11 +180,16 @@ func (rm *RoomManager) startDayPhase(roomCode string) {
 		}
 	}
 
+	room.SpeakersThisRound = make(map[string]bool)
+	room.CurrentSpeakerIndex = rm.findFirstActivePlayer(room)
+	firstSpeaker := room.Players[room.CurrentSpeakerIndex]
+
 	dayPhaseMsg := models.SignalingMessage{
-		Type:    "phase-change",
-		Phase:   "Day",
-		Result:  resultMessage,
-		Players: rm.getCurrentPlayers(roomCode),
+		Type:        "phase-change",
+		Phase:       "Day",
+		Result:      resultMessage,
+		Players:     rm.getCurrentPlayers(roomCode),
+		SpeakerName: firstSpeaker.Name,
 	}
 	payload, err := json.Marshal(dayPhaseMsg)
 	if err != nil {
@@ -302,6 +307,15 @@ func (rm *RoomManager) findNextActivePlayer(room *models.Room) int {
 		}
 	}
 
+	return -1
+}
+
+func (rm *RoomManager) findFirstActivePlayer(room *models.Room) int {
+	for i, player := range room.Players {
+		if player.IsActive {
+			return i
+		}
+	}
 	return -1
 }
 
